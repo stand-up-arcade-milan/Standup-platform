@@ -199,13 +199,13 @@ Il team è organizzato nelle aree BID e BAD. La suddivisione delle attività ver
 
 ### Membri del gruppo
 
-1. girelle.beni benj
-2. giuseppe.sparviero
-3. giosue.tedeschi
-4. mihai.blendea
-5. luca.cerrone
-6. vinicius.dematos
-7. marguerite deido .elmbimbey
+1. Girelle Beni Benj
+2. Giuseppe Sparviero
+3. Giosuè Tedeschi
+4. Mihai Blendea
+5. Luca Cerrone
+6. Vinicius Dematos
+7. Marguerite deido El Mbimbey
 
 ### BID · Backend, database e integrazione
 
