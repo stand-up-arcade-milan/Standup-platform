@@ -205,7 +205,7 @@ Il team è organizzato nelle aree BID e BAD. La suddivisione delle attività ver
 4. Mihai Blendea
 5. Luca Cerrone
 6. Vinicius Dematos
-7. Marguerite deido El Mbimbey
+7. Marguerite Deido El Mbimbey
 
 ### BID · Backend, database e integrazione
 
