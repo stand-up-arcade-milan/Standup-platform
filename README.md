@@ -195,7 +195,17 @@ Le date rappresentano il piano di consegna condiviso. Il GitHub Project sarà la
 <a id="gruppo"></a>
 ## Gruppo Stand up
 
-Il gruppo è suddiviso in due aree di lavoro. Le issue saranno assegnate ai gruppi BID o BAD; i nominativi individuali verranno aggiunti quando tutti avranno aderito all’organizzazione.
+Il team è organizzato nelle aree BID e BAD. La suddivisione delle attività verrà concordata e aggiornata nel GitHub Project.
+
+### Membri del gruppo
+
+1. girelle.beni benj
+2. giuseppe.sparviero
+3. giosue.tedeschi
+4. mihai.blendea
+5. luca.cerrone
+6. vinicius.dematos
+7. marguerite deido .elmbimbey
 
 ### BID · Backend, database e integrazione
 
