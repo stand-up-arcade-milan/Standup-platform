@@ -4,7 +4,7 @@
 
 Piattaforma integrata per coordinare espositori, vendite, operatività e risultati tra le edizioni dell’evento.
 
-**Stand up** · Progetto Laboratorio Integrato "BID BAD" · 2026
+**Team Stand up** · ARCADE Milano · 2026
 
 [Panoramica](#panoramica) · [Architettura](#architettura) · [Stack](#stack) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo)
 
@@ -31,11 +31,11 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 ---
 
 <a id="panoramica"></a>
-## Il progetto in spiccioli
+## Il progetto in breve
 
 ARCADE Milano è un festival di tre giorni dedicato al gaming e alla cultura pop. La piattaforma aiuta il team a preparare l’edizione, gestire espositori e sponsor, seguire le attività durante l’evento e misurare i risultati dopo la chiusura.
 
-Il prototipo utilizza i dati delle edizioni 2024 e 2025 per supportare la pianificazione del 2026 e dimostrare un flusso operativo completo, dalla gestione commerciale alla reportistica.
+La piattaforma è progettata per valorizzare i dati storici delle edizioni 2024 e 2025, supportare la pianificazione di ARCADE Milano 2026 e collegare il lavoro commerciale alla reportistica.
 
 | Prima dell’evento | Durante l’evento | Dopo l’evento |
 | --- | --- | --- |
@@ -176,12 +176,12 @@ gantt
 
     section Fondazioni
     Requisiti e modello dati       :crit, req, 2026-10-16, 2026-10-30
-    SAL1 · modello e API congelati :milestone, sal1, 2026-10-30, 0d
+    Modello dati e API definiti :milestone, sal1, 2026-10-30, 0d
 
-    section Dimostrazione SAL2
+    section Dimostrazione prodotto
     Importazione dati 2024 e 2025  :hist, 2026-10-20, 2026-11-06
     Flusso contratto 2026         :contract, 2026-10-26, 2026-11-13
-    SAL2 · demo integrata          :milestone, sal2, 2026-11-13, 0d
+    Demo integrata          :milestone, sal2, 2026-11-13, 0d
 
     section Integrazione e consegna
     Interfacce e processi          :apps, 2026-11-02, 2026-11-27
@@ -190,7 +190,7 @@ gantt
     Consegna finale                :milestone, final, 2026-12-04, 0d
 ```
 
-Le date rappresentano il piano di riferimento del corso. Il GitHub Project sarà la vista operativa per aggiornare stato, priorità, responsabile e scadenze.
+Le date rappresentano il piano di consegna condiviso. Il GitHub Project sarà la vista operativa per aggiornare stato, priorità, responsabile e scadenze.
 
 <a id="gruppo"></a>
 ## Gruppo Stand up
@@ -215,9 +215,9 @@ Il gruppo è suddiviso in due aree di lavoro. Le issue saranno assegnate ai grup
 
 | Data | Risultato atteso |
 | --- | --- |
-| 30 ottobre 2026 · SAL1 | Modello dati e contratti API definiti e congelati |
-| 13 novembre 2026 · SAL2 | Dati 2024 e 2025 importati e almeno un contratto 2026 dimostrato |
-| 4 dicembre 2026 · Consegna | Prototipo integrato, documentazione e presentazione finale |
+| 30 ottobre 2026 | Modello dati e contratti API definiti |
+| 13 novembre 2026 | Dati 2024 e 2025 disponibili e un flusso di contratto 2026 dimostrato |
+| 4 dicembre 2026 · Consegna | MVP integrato, documentazione e demo del prodotto |
 
 <a id="metodo"></a>
 ## Metodo di lavoro su GitHub
@@ -252,7 +252,7 @@ Branch di lavoro:
 - Non inserire password, token, chiavi API o credenziali nel repository.
 - Limitare i dati in base al ruolo e all’organizzazione dell’utente.
 - Documentare fonti e trasformazioni dei dati importati.
-- Raccogliere solo i dati personali necessari al prototipo.
+- Raccogliere solo i dati personali necessari al perimetro dimostrativo.
 
 ## Stato del progetto
 
