@@ -1,17 +1,36 @@
 <div align="center">
 
-# ARCADE MILANO
-
-### La regia digitale del festival
+![ARCADE Milano 2026, la regia digitale del festival](docs/assets/arcade-banner.svg)
 
 Piattaforma integrata per coordinare espositori, vendite, operatività e risultati tra le edizioni dell’evento.
 
 **Stand up** · Progetto Laboratorio Integrato "BID BAD" · 2026
 
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Stack](#stack) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo)
+
 </div>
 
 ---
 
+## Indice
+
+- [Il progetto in breve](#panoramica)
+- [Architettura della piattaforma](#architettura)
+- [Flusso operativo](#flusso-operativo)
+- [Ruoli e visibilità](#ruoli-e-visibilita)
+- [Stack tecnologico](#stack)
+- [Indicatori da validare](#indicatori-da-validare)
+- [Piano di consegna](#roadmap)
+- [Gruppo Stand up](#gruppo)
+- [Milestone](#milestone)
+- [Metodo di lavoro su GitHub](#metodo)
+- [Struttura prevista](#struttura-prevista)
+- [Sicurezza e uso dei dati](#sicurezza-e-uso-dei-dati)
+- [Stato del progetto](#stato-del-progetto)
+
+---
+
+<a id="panoramica"></a>
 ## Il progetto in spiccioli
 
 ARCADE Milano è un festival di tre giorni dedicato al gaming e alla cultura pop. La piattaforma aiuta il team a preparare l’edizione, gestire espositori e sponsor, seguire le attività durante l’evento e misurare i risultati dopo la chiusura.
@@ -22,6 +41,7 @@ Il prototipo utilizza i dati delle edizioni 2024 e 2025 per supportare la pianif
 | --- | --- | --- |
 | Dati storici, offerte, stand e contratti | Presenze e visite agli stand | Risultati, confronto tra edizioni e rinnovi |
 
+<a id="architettura"></a>
 ## Architettura della piattaforma
 
 ```mermaid
@@ -118,6 +138,7 @@ sequenceDiagram
 
 I controlli vengono applicati dall’API. Nascondere una schermata nell’interfaccia non è sufficiente per proteggere un dato: ogni richiesta deve essere verificata anche lato server.
 
+<a id="stack"></a>
 ## Stack tecnologico
 
 | Componente | Tecnologia | Responsabilità |
@@ -144,6 +165,7 @@ Gli indicatori dipendono dalla disponibilità e dalla qualità dei dati. La prim
 
 Per ogni indicatore saranno documentati definizione, fonte, formula, frequenza di aggiornamento e responsabile della validazione.
 
+<a id="roadmap"></a>
 ## Piano di consegna
 
 ```mermaid
@@ -170,6 +192,7 @@ gantt
 
 Le date rappresentano il piano di riferimento del corso. Il GitHub Project sarà la vista operativa per aggiornare stato, priorità, responsabile e scadenze.
 
+<a id="gruppo"></a>
 ## Gruppo Stand up
 
 Il gruppo è suddiviso in due aree di lavoro. Le issue saranno assegnate ai gruppi BID o BAD; i nominativi individuali verranno aggiunti quando tutti avranno aderito all’organizzazione.
@@ -196,6 +219,7 @@ Il gruppo è suddiviso in due aree di lavoro. Le issue saranno assegnate ai grup
 | 13 novembre 2026 · SAL2 | Dati 2024 e 2025 importati e almeno un contratto 2026 dimostrato |
 | 4 dicembre 2026 · Consegna | Prototipo integrato, documentazione e presentazione finale |
 
+<a id="metodo"></a>
 ## Metodo di lavoro su GitHub
 
 - Le **issue** descrivono funzionalità, attività, difetti e decisioni da validare.
