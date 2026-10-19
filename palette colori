@@ -1,0 +1,105 @@
+Versione Code
+
+- CSV
+
+171219,cbff8c,c03221,f7f7ff,3f826d
+
+- With #
+
+#171219, #cbff8c, #c03221, #f7f7ff, #3f826d
+
+- Array
+
+["171219","cbff8c","c03221","f7f7ff","3f826d"]
+
+- Object
+
+{"Coffee Bean":"171219","Lime Cream":"cbff8c","Brick Ember":"c03221","Ghost White":"f7f7ff","Jungle Teal":"3f826d"}
+
+- Extended Array
+
+[{"name":"Coffee Bean","hex":"171219","rgb":[23,18,25],"cmyk":[8,28,0,90],"hsb":[283,28,10],"hsl":[283,16,8],"lab":[6,4,-4]},{"name":"Lime Cream","hex":"cbff8c","rgb":[203,255,140],"cmyk":[20,0,45,0],"hsb":[87,45,100],"hsl":[87,100,77],"lab":[94,-35,49]},{"name":"Brick Ember","hex":"c03221","rgb":[192,50,33],"cmyk":[0,74,83,25],"hsb":[6,83,75],"hsl":[6,71,44],"lab":[44,55,44]},{"name":"Ghost White","hex":"f7f7ff","rgb":[247,247,255],"cmyk":[3,3,0,0],"hsb":[240,3,100],"hsl":[240,100,98],"lab":[97,1,-4]},{"name":"Jungle Teal","hex":"3f826d","rgb":[63,130,109],"cmyk":[52,0,16,49],"hsb":[161,52,51],"hsl":[161,35,38],"lab":[50,-27,5]}]
+
+- XML
+
+<palette>
+  <color name="Coffee Bean" hex="171219" r="23" g="18" b="25" />
+  <color name="Lime Cream" hex="cbff8c" r="203" g="255" b="140" />
+  <color name="Brick Ember" hex="c03221" r="192" g="50" b="33" />
+  <color name="Ghost White" hex="f7f7ff" r="247" g="247" b="255" />
+  <color name="Jungle Teal" hex="3f826d" r="63" g="130" b="109" />
+</palette>
+
+
+
+versione SVG
+<?xml version="1.0" encoding="utf-8"?>
+          <!-- Exported from Coolors.co - https://coolors.co/171219-cbff8c-c03221-f7f7ff-3f826d -->
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 500 250" xml:space="preserve">
+            <rect fill="#171219" x="0" y="0" width="100" height="220"/>,<rect fill="#cbff8c" x="100" y="0" width="100" height="220"/>,<rect fill="#c03221" x="200" y="0" width="100" height="220"/>,<rect fill="#f7f7ff" x="300" y="0" width="100" height="220"/>,<rect fill="#3f826d" x="400" y="0" width="100" height="220"/>
+            <text x="10" y="235" font-family="Arial" font-size="6" alignment-baseline="middle">Exported from Coolors.co</text>
+            <text x="490" y="235" font-family="Arial" font-size="6" alignment-baseline="middle" text-anchor="end">https://coolors.co/171219-cbff8c-c03221-f7f7ff-3f826d</text>
+          </svg>
+
+
+versione Tailwind
+--color-coffee-bean-50: #f3f0f4;
+--color-coffee-bean-100: #e7e1ea;
+--color-coffee-bean-200: #d0c4d4;
+--color-coffee-bean-300: #b8a6bf;
+--color-coffee-bean-400: #a089a9;
+--color-coffee-bean-500: #886b94;
+--color-coffee-bean-600: #6d5676;
+--color-coffee-bean-700: #524059;
+--color-coffee-bean-800: #372b3b;
+--color-coffee-bean-900: #1b151e;
+--color-coffee-bean-950: #130f15;
+
+--color-lime-cream-50: #f4ffe5;
+--color-lime-cream-100: #e8ffcc;
+--color-lime-cream-200: #d1ff99;
+--color-lime-cream-300: #baff66;
+--color-lime-cream-400: #a3ff33;
+--color-lime-cream-500: #8cff00;
+--color-lime-cream-600: #70cc00;
+--color-lime-cream-700: #549900;
+--color-lime-cream-800: #386600;
+--color-lime-cream-900: #1c3300;
+--color-lime-cream-950: #142400;
+
+--color-brick-ember-50: #fbebe9;
+--color-brick-ember-100: #f8d7d3;
+--color-brick-ember-200: #f0afa8;
+--color-brick-ember-300: #e9877c;
+--color-brick-ember-400: #e15f51;
+--color-brick-ember-500: #da3725;
+--color-brick-ember-600: #ae2c1e;
+--color-brick-ember-700: #832116;
+--color-brick-ember-800: #57160f;
+--color-brick-ember-900: #2c0b07;
+--color-brick-ember-950: #1f0805;
+
+--color-ghost-white-50: #e5e5ff;
+--color-ghost-white-100: #ccccff;
+--color-ghost-white-200: #9999ff;
+--color-ghost-white-300: #6666ff;
+--color-ghost-white-400: #3333ff;
+--color-ghost-white-500: #0000ff;
+--color-ghost-white-600: #0000cc;
+--color-ghost-white-700: #000099;
+--color-ghost-white-800: #000066;
+--color-ghost-white-900: #000033;
+--color-ghost-white-950: #000024;
+
+--color-jungle-teal-50: #eef7f4;
+--color-jungle-teal-100: #ddeee9;
+--color-jungle-teal-200: #baded3;
+--color-jungle-teal-300: #98cdbc;
+--color-jungle-teal-400: #75bda6;
+--color-jungle-teal-500: #53ac90;
+--color-jungle-teal-600: #428a73;
+--color-jungle-teal-700: #326756;
+--color-jungle-teal-800: #21453a;
+--color-jungle-teal-900: #11221d;
+--color-jungle-teal-950: #0c1814;
+
