@@ -1,12 +1,12 @@
 <div align="center">
 
-![ARCADE Milano 2026, la regia digitale del festival](docs/assets/arcade-banner.svg)
+![Stand up presenta ARCADE Milano 2026](docs/assets/arcade-banner.svg)
 
 Piattaforma integrata per coordinare espositori, vendite, operatività e risultati tra le edizioni dell’evento.
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Stack](#stack) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Stack](#stack) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva)
 
 </div>
 
@@ -84,10 +84,10 @@ flowchart LR
     API -. "eventi di processo" .-> AUTO
     AUTO -. "notifiche e approvazioni" .-> API
 
-    classDef people fill:#172554,color:#ffffff,stroke:#60a5fa,stroke-width:2px
-    classDef experience fill:#0f766e,color:#ffffff,stroke:#5eead4,stroke-width:2px
-    classDef service fill:#6d28d9,color:#ffffff,stroke:#c4b5fd,stroke-width:2px
-    classDef data fill:#9a3412,color:#ffffff,stroke:#fdba74,stroke-width:2px
+    classDef people fill:#3f826d,color:#f7f7ff,stroke:#cbff8c,stroke-width:2px
+    classDef experience fill:#171219,color:#f7f7ff,stroke:#3f826d,stroke-width:2px
+    classDef service fill:#c03221,color:#f7f7ff,stroke:#f7f7ff,stroke-width:2px
+    classDef data fill:#cbff8c,color:#171219,stroke:#3f826d,stroke-width:2px
 
     class DIR,COM,STA,ESP people
     class SP,WEB,PA experience
@@ -150,6 +150,21 @@ I controlli vengono applicati dall’API. Nascondere una schermata nell’interf
 | App operative | Power Apps | Raccolta e gestione di processi BAD |
 | Automazioni | Power Automate | Notifiche e approvazioni |
 | Analisi | Power BI | Indicatori, riepiloghi e confronti |
+
+<a id="identita-visiva"></a>
+## Identità visiva
+
+La palette ufficiale di Stand up combina un fondo scuro con accenti luminosi e un colore secondario ispirato al palco e alla cultura arcade.
+
+| Colore | Codice | Uso nel progetto |
+| --- | --- | --- |
+| Coffee Bean | #171219 | Fondo principale e testi su superfici chiare |
+| Lime Cream | #cbff8c | Accenti, evidenze e stati attivi |
+| Brick Ember | #c03221 | Azioni, dettagli di richiamo e contrasto |
+| Ghost White | #f7f7ff | Testi su fondi scuri e superfici chiare |
+| Jungle Teal | #3f826d | Elementi secondari, collegamenti e area dati |
+
+I valori HEX sono i riferimenti ufficiali. Le tonalità derivate per gli stati intermedi possono essere usate nell’interfaccia, mantenendo leggibili testi e controlli.
 
 ## Indicatori da validare
 
