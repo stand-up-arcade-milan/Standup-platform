@@ -135,23 +135,81 @@ Questa separazione potrebbe rendere più semplice controllare gli accessi, evita
 <a id="flusso-operativo"></a>
 ## Flusso operativo
 
+In ogni flusso la regola è la stessa: le schermate non parlano mai direttamente con il database. Passano dall’API, che verifica identità, ruolo e ambito, e Power BI legge solo viste autorizzate. Ecco tre esempi concreti.
+
+### 1. Dal preventivo al contratto
+
+Il processo che vende lo stand. Il back office è in Power Apps, i documenti stanno su SharePoint.
+
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operatore
-    participant UI as React o Power Apps
+    actor Com as Commerciale
+    participant PA as Back office Power Apps
     participant API as API Spring Boot
+    participant DB as PostgreSQL
+    participant FLOW as Power Automate
+    participant SP as SharePoint
+    participant BI as Power BI
+
+    Com->>PA: Crea l'offerta per l'espositore e sceglie lo stand
+    PA->>API: Invia offerta, stand ed edizione
+    API->>API: Verifica ruolo e pratiche assegnate
+    API->>DB: Registra l'offerta
+    API->>FLOW: Segnala l'evento offerta creata
+    FLOW->>Com: Notifica e richiesta di approvazione
+    Com->>PA: Conferma il contratto e registra l'acconto
+    PA->>API: Aggiorna stato contratto e pagamento
+    API->>DB: Salva contratto, acconto e stato dello stand
+    FLOW->>SP: Archivia il contratto firmato
+    DB-->>BI: Vendite, acconti e previsioni aggiornati
+```
+
+### 2. Ingresso del visitatore
+
+Il flusso che conta le persone. Dipende da biglietteria e tornelli, quindi va confermato con i fornitori (decisioni aperte 1 e 2).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Vis as Visitatore
+    participant TURN as Tornello e lettore
+    participant API as API Spring Boot
+    participant TICKET as Biglietteria esterna
     participant DB as PostgreSQL
     participant BI as Power BI
 
-    Operatore->>UI: Accede con il proprio account
-    UI->>API: Richiede dati o registra un'attività
-    API->>API: Verifica identità, ruolo e ambito
-    API->>DB: Legge o aggiorna i dati autorizzati
-    DB-->>API: Restituisce il risultato
-    API-->>UI: Risposta filtrata per l'utente
-    DB-->>BI: Viste di lettura per gli indicatori
-    BI-->>Operatore: Report coerente con il ruolo
+    Vis->>TURN: Mostra il QR del biglietto
+    TURN->>API: Invia la lettura con varco e orario
+    API->>TICKET: Verifica che il biglietto sia valido
+    TICKET-->>API: Conferma validità e tipologia
+    API->>DB: Registra l'accesso con esito e orario
+    API-->>TURN: Esito del varco
+    DB-->>BI: Affluenza, picchi e saturazione
+```
+
+### 3. Scansione allo stand
+
+Il flusso che misura i contatti. I dati del visitatore compaiono solo se servono e sono autorizzati.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff
+    participant SCAN as App scansione stand
+    participant API as API Spring Boot
+    participant DB as PostgreSQL
+    participant BI as Power BI
+    actor Esp as Espositore
+
+    Staff->>SCAN: Scansiona il QR del visitatore
+    SCAN->>API: Invia codice, stand e operatore
+    API->>API: Verifica ruolo, stand e consenso
+    API->>DB: Salva la scansione se valida e non duplicata
+    DB-->>API: Conferma
+    API-->>SCAN: Esito e conteggio, senza dati inutili
+    DB-->>BI: Contatti raccolti per stand
+    BI-->>Esp: Solo i contatti del proprio stand
 ```
 
 <a id="stack"></a>
