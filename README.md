@@ -41,7 +41,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 ARCADE Milano è un festival di tre giorni dedicato al gaming e alla cultura pop. La piattaforma aiuta il team a preparare l’edizione, gestire espositori e sponsor, seguire le attività durante l’evento e misurare i risultati dopo la chiusura.
 
-Nasce da una bozza cartacea ed è pensata per fare bene tre cose:
+E' pensato per fare bene tre cose:
 
 1. **Vendere lo stand**, dal preventivo al contratto, con acconti e previsioni sotto controllo.
 2. **Seguire l’affluenza**, cioè quante persone entrano, quando e dove, in diretta se i tornelli lo consentono.
