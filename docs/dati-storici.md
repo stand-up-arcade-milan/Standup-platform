@@ -1,6 +1,6 @@
 # Dati storici 2024 e 2025
 
-Documento di lavoro del team **Stand up**. Descrive i dati delle due edizioni precedenti di ARCADE Milano, che cosa permettono di calcolare, che cosa manca e come importarli. Lo schema di partenza è in [`database/schema-bozza.sql`](../database/schema-bozza.sql).
+Documento di lavoro del team **Stand up**. Descrive i dati delle due edizioni precedenti di ARCADE Milano, che cosa permettono di calcolare, che cosa manca e come importarli. Lo schema è nelle [migrazioni](../database/migrations), la governance dei dati in [`governance-dati.md`](governance-dati.md).
 
 Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md)
 
@@ -128,23 +128,30 @@ I 2.787 biglietti mai passati ai varchi sono veri no-show e restano nei dati. I 
 - Fascia d'età e provincia sono dati del titolare del biglietto: nei report si aggregano.
 - I dati personali dei contatti non vanno nella repository né nei mockup.
 
-## 7. Importazione proposta
+## 7. Importazione
 
-Ordine di caricamento in PostgreSQL:
-1. Tabelle di riferimento: edizioni, categorie di biglietto, canali, padiglioni, varchi, stand ed espositori.
-2. Ordini e biglietti.
-3. Accessi ai tornelli.
-4. Visite e contatti degli stand, con le email nella tabella riservata.
-5. Catalogo delle anomalie, scarti e fasce orarie mancanti.
+Lo script [`scripts/dati/importa_storici.py`](../scripts/dati/importa_storici.py) esegue tutto in un comando:
+
+```
+pip install -r scripts/dati/requirements.txt
+python scripts/dati/importa_storici.py --dsn "postgresql://utente:password@localhost/arcade" --dati ./dati-storici
+```
+
+1. Applica le migrazioni non ancora applicate.
+2. Carica i cinque file in staging, senza trasformarli.
+3. Si ferma se trova `id_evento` duplicati o contatti senza riga nel file dei contatti.
+4. Trasforma lo staging nello schema con [`trasforma.sql`](../scripts/dati/trasforma.sql).
+5. Scrive il registro dell'importazione e il [report di qualità](report-qualita-dati.md).
+6. Elimina lo staging, perché contiene le email.
 
 Regole:
-- `id_evento` è la chiave di ogni riga, così il caricamento si può ripetere senza duplicare.
-- Ogni caricamento scrive una riga nel registro delle importazioni, con file, righe lette e righe scartate.
+- `id_evento` è la chiave di ogni riga, così il caricamento si può ripetere senza duplicare: una seconda esecuzione carica 0 righe.
 - Le righe con anomalia non si correggono né si cancellano: si conserva il flag di `controllo_qualita`.
 - Data e ora diventano un unico orario con fuso Europe/Rome.
-- Dopo il caricamento, si confrontano i totali con quelli della sezione 3.
+- Il codice termina con errore se i totali del file e del database non coincidono o se un controllo di integrità non passa.
+- I CSV restano fuori dal repository.
 
-## 8. Schema di partenza
+## 8. Schema
 
 ```mermaid
 erDiagram
