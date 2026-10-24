@@ -6,34 +6,9 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori-da-validare) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori-da-validare) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md)
 
 </div>
-
----
-
-## Indice
-
-- [Il progetto in breve](#panoramica)
-- [Architettura della piattaforma](#architettura)
-- [Flusso operativo](#flusso-operativo)
-- [Stack tecnologico](#stack)
-- [React o Power Apps: chi usa cosa](#react-o-power-apps)
-- [Ruoli e visibilità](#ruoli-e-visibilita)
-- [Schermate da progettare](#schermate)
-- [Modello dati iniziale](#modello-dati)
-- [Indicatori da validare](#indicatori-da-validare)
-- [Stima delle presenze dal peso](#stima-peso)
-- [Privacy e sicurezza, con privacy by design](#sicurezza-e-uso-dei-dati)
-- [Decisioni aperte](#decisioni-aperte)
-- [Piano di consegna](#roadmap)
-- [Gruppo Stand up](#gruppo)
-- [Milestone](#milestone)
-- [Metodo di lavoro su GitHub](#metodo)
-- [Struttura prevista](#struttura-prevista)
-- [Documentazione](#documentazione)
-- [Identità visiva](#identita-visiva)
-- [Stato del progetto](#stato-del-progetto)
 
 ---
 
@@ -48,7 +23,7 @@ E' pensato per fare bene tre cose:
 2. **Seguire l’affluenza**, cioè quante persone entrano, quando e dove, in diretta se i tornelli lo consentono.
 3. **Confrontare le edizioni**, con un riepilogo dei numeri, il confronto con gli anni scorsi e la proposta di rinnovo agli espositori.
 
-Le tre cose usano gli stessi dati, così direzione, commerciale ed espositori vedono numeri coerenti. La piattaforma valorizza i dati storici delle edizioni 2024 e 2025 e supporta la pianificazione di ARCADE Milano 2026.
+Le tre cose usano gli stessi dati, così direzione, commerciale ed espositori vedono numeri coerenti.
 
 | Prima dell’evento | Durante l’evento | Dopo l’evento |
 | --- | --- | --- |
@@ -115,8 +90,6 @@ flowchart LR
     class DB store
 ```
 
-**Come leggere il diagramma.** Le persone usano l’interfaccia adatta al proprio compito. I client passano dall’API, che applica le autorizzazioni e legge o aggiorna il modello condiviso. I sistemi esterni e i dati storici entrano attraverso integrazioni controllate. Power BI consuma viste autorizzate. SharePoint è il punto per documenti e materiali.
-
 ### Perché questa architettura
 
 Il database PostgreSQL conserva i dati condivisi e mantiene relazioni coerenti tra edizioni, espositori, stand, contratti, biglietti, accessi e scansioni.
@@ -124,16 +97,6 @@ Il database PostgreSQL conserva i dati condivisi e mantiene relazioni coerenti t
 L’API Java con Spring Boot centralizza le regole applicative e i controlli di autorizzazione. React e Power Apps offrono interfacce adatte ai diversi processi, senza collegarsi direttamente alle tabelle.
 
 SharePoint è adatto a documenti e collaborazione, mentre le transazioni e le relazioni principali restano in PostgreSQL. Power Automate gestisce preventivi, approvazioni, contratti, notifiche e rinnovi. Power BI presenta gli indicatori per ruolo e ambito.
-
-Questa separazione potrebbe rendere più semplice controllare gli accessi, evitare duplicazioni e modificare un componente senza riscrivere l’intero sistema.
-
-### In parole semplici
-
-| Livello | Che cos’è | Tecnologia |
-| --- | --- | --- |
-| Le schermate | Ciò che le persone vedono e toccano | React, Power Apps, Power BI |
-| L’API | Il centralino: riceve le richieste, controlla chi sei e che cosa puoi fare, poi parla con l’archivio | Java, Spring Boot |
-| L’archivio | Il database unico, dove vivono contratti, espositori, biglietti, accessi e scansioni | PostgreSQL |
 
 <a id="flusso-operativo"></a>
 ## Flusso operativo
@@ -346,12 +309,6 @@ Per il 2024 e il 2025 non esistono misure di peso: il confronto tra edizioni su 
 ## Privacy e sicurezza
 
 - Non inserire password, token, chiavi API o credenziali nel repository.
-- Raccogliere solo i campi personali necessari e definire chi li può vedere.
-- Limitare i dati in base al ruolo e all’organizzazione dell’utente, sul server e nei report.
-- Stabilire tempi di conservazione, cancellazione e gestione delle richieste.
-- Proteggere maggiormente i dati di eventuali minorenni.
-- Non mostrare i dati personali dei visitatori durante la scansione se basta un esito o un conteggio.
-- Registrare gli accessi ai dati sensibili e le operazioni amministrative.
 - Documentare fonti e trasformazioni dei dati importati.
 
 ### Privacy by design
@@ -380,12 +337,10 @@ La piattaforma nasce con la protezione dei dati nel progetto, come chiede il GDP
 | Codice fiscale, età, curriculum dello staff | Da verificare | Nessuno finché non è confermato che servano | Non raccolti per ora |
 | Peso rilevato nello stand | Stima delle presenze | Staff e direzione | Nessun dato personale |
 
-Gli appunti iniziali citano codice fiscale, età e curriculum per lo staff: prima del mockup va verificato se siano davvero indispensabili. Questi punti sono requisiti da validare con il responsabile privacy.
-
 <a id="decisioni-aperte"></a>
 ## Decisioni aperte
 
-Servono le risposte prima di scrivere codice. Per le ultime tre il gruppo ha già una proposta da presentare al cliente.
+Servono le risposte prima di scrivere codice.
 
 1. Chi è il fornitore della biglietteria e che cosa identifica ogni biglietto?
 2. I tornelli inviano eventi in tempo reale? Espongono ingressi e uscite o solo scansioni?
@@ -402,7 +357,7 @@ Servono le risposte prima di scrivere codice. Per le ultime tre il gruppo ha gi�
 <a id="roadmap"></a>
 ## Piano di consegna
 
-Dal kickoff del 16 ottobre alla presentazione finale del 4 dicembre 2026, in cinque fasi. In rosso le attività del percorso critico, i rombi sono le date di controllo con il cliente.
+Dal kickoff del 16 ottobre alla presentazione finale del 4 dicembre 2026, in cinque fasi.
 
 ```mermaid
 gantt
@@ -460,16 +415,6 @@ Ogni attività ha una issue nel [GitHub Project](https://github.com/orgs/stand-u
 - **Caricamento degli storici con le anomalie gestite** entro il 12 novembre: senza dati la demo del SAL 2 non regge.
 - **Flusso commerciale, dalla pratica al contratto,** entro il 12 novembre: è la fase "prima" da mostrare al SAL 2.
 - **Riconciliazione dei numeri** tra Power BI, cruscotto e portale prima dei test finali.
-
-### Sequenza di lavoro
-
-1. Confermare processi e utenti con il cliente e con il gruppo.
-2. Definire glossario, dati e permessi, comprese le regole privacy e i KPI.
-3. Congelare il modello dati e il contratto API per il primo SAL, se le dipendenze sono disponibili.
-4. Disegnare i mockup delle schermate per ruolo, con la palette ufficiale.
-5. Provare le integrazioni con dati anonimizzati o dimostrativi e un singolo flusso completo.
-6. Realizzare una prova completa: un espositore, uno stand, un contratto, un biglietto e un accesso tracciato, fino al report.
-7. Ampliare i moduli, validare qualità e permessi, poi preparare demo e documentazione.
 
 <a id="gruppo"></a>
 ## Gruppo Stand up
@@ -551,6 +496,7 @@ Branch di lavoro:
 
 - [Blueprint digitale](docs/blueprint-digitale.md): traduzione digitale della bozza cartacea, con architettura, processi, schermate, KPI, privacy e decisioni aperte. È la base di discussione con il gruppo e con il committente.
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
+- [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione. Lo schema di partenza è in [`database/schema-bozza.sql`](database/schema-bozza.sql).
 
 <a id="identita-visiva"></a>
 ## Identità visiva
@@ -564,8 +510,6 @@ La palette ufficiale di Stand up combina un fondo scuro con accenti luminosi e u
 | Brick Ember | #c03221 | Azioni, dettagli di richiamo e contrasto |
 | Ghost White | #f7f7ff | Testi su fondi scuri e superfici chiare |
 | Jungle Teal | #3f826d | Elementi secondari, collegamenti e area dati |
-
-I valori HEX sono i riferimenti ufficiali. Le tonalità derivate per gli stati intermedi possono essere usate nell’interfaccia, mantenendo leggibili testi e controlli.
 
 <a id="stato-del-progetto"></a>
 ## Stato del progetto
