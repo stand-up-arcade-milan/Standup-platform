@@ -496,6 +496,7 @@ Branch di lavoro:
 
 - [Blueprint digitale](docs/blueprint-digitale.md): traduzione digitale della bozza cartacea, con architettura, processi, schermate, KPI, privacy e decisioni aperte. È la base di discussione con il gruppo e con il committente.
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
+- [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione. Lo schema di partenza è in [`database/schema-bozza.sql`](database/schema-bozza.sql).
 
 <a id="identita-visiva"></a>
 ## Identità visiva
