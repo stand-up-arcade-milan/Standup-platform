@@ -6,8 +6,9 @@
 #
 # Si può rilanciare senza rischi: le issue con lo stesso titolo non vengono duplicate.
 # Il rilancio riporta Status a Todo: per non toccarlo aggiungi -SenzaStatus.
+# BID e BAD sono indicati dalle etichette colorate. Il campo Area si compila solo con -ConArea.
 
-param([switch]$Esegui, [switch]$SenzaStatus)
+param([switch]$Esegui, [switch]$SenzaStatus, [switch]$ConArea)
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -190,7 +191,7 @@ foreach ($a in $piano) {
             @{ field_id = [int64]$cStart.id;  value = $a.Inizio },
             @{ field_id = [int64]$cTarget.id; value = $a.Fine }
         )
-        if ($cArea) {
+        if ($cArea -and $ConArea) {
             $opz = $cArea.options | Where-Object { $_.name -ieq $a.Filone }
             if ($opz) { $valori += @{ field_id = [int64]$cArea.id; value = $opz.name } }
         }
