@@ -23,7 +23,8 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 - [Schermate da progettare](#schermate)
 - [Modello dati iniziale](#modello-dati)
 - [Indicatori da validare](#indicatori-da-validare)
-- [Privacy e sicurezza](#sicurezza-e-uso-dei-dati)
+- [Stima delle presenze dal peso](#stima-peso)
+- [Privacy e sicurezza, con privacy by design](#sicurezza-e-uso-dei-dati)
 - [Decisioni aperte](#decisioni-aperte)
 - [Piano di consegna](#roadmap)
 - [Gruppo Stand up](#gruppo)
@@ -82,6 +83,7 @@ flowchart LR
 
     TICKET["Biglietteria esterna"]
     TURN["Tornelli e lettori"]
+    SENS["Sensori di peso agli stand<br/>simulati nella demo"]
     HIST["Dati storici 2024 e 2025"]
 
     D --> BI
@@ -101,6 +103,7 @@ flowchart LR
     TICKET <--> API
     TURN --> API
     HIST --> API
+    SENS --> API
 
     classDef people fill:#3f826d,color:#f7f7ff,stroke:#cbff8c,stroke-width:2px
     classDef ui fill:#171219,color:#f7f7ff,stroke:#3f826d,stroke-width:2px
@@ -108,7 +111,7 @@ flowchart LR
     classDef store fill:#cbff8c,color:#171219,stroke:#3f826d,stroke-width:2px
     class D,C,S,E,V people
     class WEB,PA,SCAN,BI,DOC ui
-    class API,FLOW,TICKET,TURN,HIST platform
+    class API,FLOW,TICKET,TURN,HIST,SENS platform
     class DB store
 ```
 
@@ -139,12 +142,13 @@ In ogni flusso la regola è la stessa: le schermate non parlano mai direttamente
 
 ### 1. Dal preventivo al contratto
 
-Il processo che vende lo stand. Il back office è in Power Apps, i documenti stanno su SharePoint.
+Il processo che vende lo stand, ridotto a una sola pratica e a quattro passaggi: scelta, offerta, firma con acconto, chiusura automatica. Il back office è in Power Apps, i documenti stanno su SharePoint. L'approvazione scatta solo per le eccezioni, cioè per uno sconto oltre la soglia (proposta: 10%).
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Com as Commerciale
+    actor Esp as Espositore
     participant PA as Back office Power Apps
     participant API as API Spring Boot
     participant DB as PostgreSQL
@@ -152,18 +156,25 @@ sequenceDiagram
     participant SP as SharePoint
     participant BI as Power BI
 
-    Com->>PA: Crea l'offerta per l'espositore e sceglie lo stand
-    PA->>API: Invia offerta, stand ed edizione
-    API->>API: Verifica ruolo e pratiche assegnate
-    API->>DB: Registra l'offerta
-    API->>FLOW: Segnala l'evento offerta creata
-    FLOW->>Com: Notifica e richiesta di approvazione
-    Com->>PA: Conferma il contratto e registra l'acconto
-    PA->>API: Aggiorna stato contratto e pagamento
-    API->>DB: Salva contratto, acconto e stato dello stand
+    Com->>PA: Sceglie espositore e stand, il prezzo arriva dal listino
+    PA->>API: Crea la pratica in stato Bozza
+    API->>DB: Salva la pratica
+    Com->>PA: Genera l'offerta con un clic
+    PA->>FLOW: Crea il documento dal modello Word
+    opt Sconto oltre la soglia
+        FLOW->>Com: Chiede l'approvazione, solo per le eccezioni
+    end
+    FLOW->>Esp: Invia l'offerta
+    Esp-->>Com: Accetta e firma
+    Com->>PA: Registra firma e acconto nella stessa schermata
+    PA->>API: Pratica Firmata, acconto ricevuto
+    API->>DB: Assegna lo stand e salva contratto e acconto
     FLOW->>SP: Archivia il contratto firmato
+    FLOW->>Com: Avvisa che la pratica è chiusa
     DB-->>BI: Vendite, acconti e previsioni aggiornati
 ```
+
+La pratica ha quattro stati: **Bozza, Inviata, Firmata, Acconto ricevuto**. Prelazione e rinnovo restano fuori dal flusso principale: il rinnovo è una proposta generata in automatico dal contratto dell'edizione precedente.
 
 ### 2. Ingresso del visitatore
 
@@ -222,7 +233,7 @@ sequenceDiagram
 | Descrizione API | OpenAPI e Swagger UI | Contratto leggibile e documentazione degli endpoint, consultabili e provabili |
 | Interfaccia web | React | Portale responsive per espositori, visitatori e operatività evento |
 | App operative | Power Apps | Back office commerciale e, se la prova tecnica lo conferma, scansione allo stand |
-| Automazioni | Power Automate | Preventivo, approvazione, contratto, notifiche e rinnovi |
+| Automazioni | Power Automate | Generazione dell’offerta, approvazione delle sole eccezioni, archivio, notifiche e rinnovi |
 | Documenti | SharePoint | File, planimetrie, contratti firmati e materiali |
 | Analisi | Power BI | Indicatori direzionali e viste per ruolo |
 | Identità | Microsoft Entra ID, da valutare | Accesso con account e gruppi, se disponibile per il contesto |
@@ -269,7 +280,7 @@ Il primo mockup usa un’unica navigazione, con pagine e azioni visibili in base
 | Accesso | Tutti | Accesso, gestione sessione e messaggi di autorizzazione |
 | Cruscotto direzionale | Direzione | Visitatori, picchi, saturazione, ricavi per m², costo per contatto e confronto edizioni |
 | Operatività evento | Staff | Stato dei varchi, affluenza, avvisi, turni e riepilogo per area |
-| Back office commerciale | Commerciale | Espositori, listino, planimetria, offerte, contratti, acconti e rinnovi |
+| Back office commerciale | Commerciale | Scheda pratica unica per offerta, contratto e acconto, più espositori, listino, planimetria e rinnovi |
 | Area espositore | Espositore | Dati della propria azienda, stand, documenti, servizi e riepilogo autorizzato |
 | Scansione allo stand | Staff o espositore autorizzato | Lettura QR, esito, orario e conteggio, con dati del visitatore solo se necessari e autorizzati |
 | Biglietteria e accessi | Staff autorizzato | Verifica del biglietto, esito del varco, orario e gestione delle eccezioni |
@@ -288,6 +299,7 @@ Le entità sono una base di discussione tra BID e BAD. Relazioni e campi vanno d
 - **Accesso**: varco, esito, orario e riferimento al biglietto.
 - **Scansione stand / Lead**: stand, orario, operatore e identificativo consentito.
 - **Persona staff / Turno / Badge**: ruolo, area, orario e stato del badge.
+- **Rilevazione di peso / Parametri di stima**: stand, orario, peso lordo, tara e fonte, più peso medio, soglia di rumore e capienza per m².
 - **Fonte importata / Esito importazione**: origine, data, righe elaborate e anomalie.
 
 <a id="indicatori-da-validare"></a>
@@ -300,6 +312,7 @@ Gli indicatori dipendono dalla disponibilità e dalla qualità dei dati. Nessuna
 | Visitatori | Biglietti venduti, ingressi effettivi o persone uniche, che non sono la stessa misura | Biglietteria e letture dei varchi |
 | Picco di presenza | Massimo di persone presenti nello stesso intervallo, da ingressi e uscite affidabili | Orari e direzione dei passaggi |
 | Saturazione spazi | Occupazione: denominatore, area e soglia da definire | Planimetria, superficie e presenze |
+| Presenze nello stand (stima dal peso) | Persone stimate dal peso netto diviso il peso medio, con margine d’errore dichiarato | Sensori di peso, tara e parametri di stima |
 | Visitatori per m² | Persone nell’area divise per superficie utile e intervallo | Presenze per area e m² |
 | Ricavo per m² | Ricavo attribuito all’area diviso per superficie, con lordo o netto e periodo da chiarire | Contratti, incassi e planimetria |
 | Contatti / lead | Scansioni valide e non duplicate, secondo consenso e regole concordate | Scanner, stand, orario |
@@ -308,6 +321,26 @@ Gli indicatori dipendono dalla disponibilità e dalla qualità dei dati. Nessuna
 Oltre a questi, la prima proposta comprende espositori per edizione e stato del contratto, offerte per valore e stato, stand venduti e disponibilità residua, il confronto tra le edizioni 2024, 2025 e 2026 e un riepilogo per espositore con accesso limitato alla propria organizzazione.
 
 Per ogni indicatore saranno documentati proprietario, definizione, fonte, formula, frequenza di aggiornamento, filtri e controlli di riconciliazione, così il numero non cambia significato tra direzione, commerciale ed espositori.
+
+<a id="stima-peso"></a>
+### Stima delle presenze dal peso
+
+Per valutare l’affluenza in uno spazio circoscritto come lo stand si può usare il peso rilevato in quel momento. Le scelte sotto sono già fatte e sono tutte modificabili da parametro.
+
+| Tema | Soluzione proposta | Perché |
+| --- | --- | --- |
+| Sensori | Letture **simulate** da un generatore di dati con un profilo di giornata realistico, e picchi a metà mattina e nel pomeriggio. Facoltativa una prova fisica con una cella di carico e una scheda ESP32 | La demo è ripetibile e non servono sensori in fiera. L'API accetta lo stesso messaggio da un sensore vero o simulato |
+| Formula | Persone stimate = (peso lordo meno tara) diviso peso medio | Una riga di calcolo, spiegabile a chiunque |
+| Peso medio | 70 kg a persona, parametro per edizione | Valore prudente, regolabile dopo una prova |
+| Tara | Stand azzerato a vuoto all'apertura e dopo ogni cambio di allestimento | Elimina il peso di arredi ed espositori |
+| Rumore | Media mobile su 30 secondi, variazioni sotto i 20 kg ignorate, valori oltre la capienza scartati | Evita picchi falsi, per esempio per una borsa appoggiata |
+| Frequenza | Una lettura ogni 10 secondi, aggregata al minuto e a 5 minuti per il cruscotto | Abbastanza fluida da sembrare in diretta |
+| Capienza | Superficie dello stand per 1 persona al m², parametro modificabile | Dà una saturazione semplice da leggere |
+| Validazione | Confronto con le scansioni QR allo stand e con conteggi manuali di 10 minuti, obiettivo di scostamento medio entro il 15% | Dimostra quanto è affidabile la stima |
+| Privacy | Nessun dato personale: il peso non identifica nessuno | Un vantaggio da dichiarare |
+| Limiti | Bambini, borse e oggetti spostati falsano la stima. È una stima, non un conteggio, e gli ingressi totali restano ai tornelli | Meglio dichiararlo noi che farlo scoprire al cliente |
+
+Per il 2024 e il 2025 non esistono misure di peso: il confronto tra edizioni su questo indicatore si fa su scenari simulati, e va dichiarato nei report.
 
 <a id="sicurezza-e-uso-dei-dati"></a>
 ## Privacy e sicurezza
@@ -321,12 +354,38 @@ Per ogni indicatore saranno documentati proprietario, definizione, fonte, formul
 - Registrare gli accessi ai dati sensibili e le operazioni amministrative.
 - Documentare fonti e trasformazioni dei dati importati.
 
+### Privacy by design
+
+La piattaforma nasce con la protezione dei dati nel progetto, come chiede il GDPR (articolo 25): raccoglie il minimo e mostra a ciascuno solo ciò che gli serve.
+
+| Principio | Come si applica |
+| --- | --- |
+| Minimizzazione | Biglietto senza dati personali non necessari, verifica di codice fiscale, età e curriculum dello staff |
+| Impostazioni sicure per default | Ogni profilo vede solo il proprio ambito, e nei report i dati dei visitatori sono aggregati |
+| Dati anonimi dove basta | La scansione allo stand mostra un esito, la stima dal peso non identifica nessuno |
+| Controllo sul server | Permessi nell'API e nei report Power BI, non solo pulsanti nascosti |
+| Tutela dei minori | Aggregazione o pseudonimizzazione dei dati della biglietteria |
+| Tracciabilità | Registro degli accessi ai dati sensibili e delle operazioni amministrative |
+| Conservazione limitata | Tempi di cancellazione e gestione delle richieste, come da tabella |
+
+**Tabella dei dati personali (proposta da validare con il responsabile privacy).**
+
+| Dato | Finalità | Chi lo vede | Conservazione proposta |
+| --- | --- | --- | --- |
+| Email e nome dell'account | Accesso alla piattaforma | L'utente e l'amministratore | Finché l'account è attivo |
+| Codice del biglietto | Verifica dell'ingresso | Staff autorizzato | Fino alla chiusura dell'edizione, poi solo dati aggregati |
+| Accesso al varco | Affluenza e picchi | Direzione, in forma aggregata | Dati aggregati dopo la chiusura dell'edizione |
+| Scansione allo stand (lead) | Contatti per l'espositore, con consenso | Solo l'espositore di quello stand | Fino alla consegna del riepilogo post-fiera |
+| Staff: nome, ruolo e turno | Organizzazione del servizio | Responsabili dello staff | Fino alla chiusura dell'edizione |
+| Codice fiscale, età, curriculum dello staff | Da verificare | Nessuno finché non è confermato che servano | Non raccolti per ora |
+| Peso rilevato nello stand | Stima delle presenze | Staff e direzione | Nessun dato personale |
+
 Gli appunti iniziali citano codice fiscale, età e curriculum per lo staff: prima del mockup va verificato se siano davvero indispensabili. Questi punti sono requisiti da validare con il responsabile privacy.
 
 <a id="decisioni-aperte"></a>
 ## Decisioni aperte
 
-Servono le risposte prima di scrivere codice.
+Servono le risposte prima di scrivere codice. Per le ultime tre il gruppo ha già una proposta da presentare al cliente.
 
 1. Chi è il fornitore della biglietteria e che cosa identifica ogni biglietto?
 2. I tornelli inviano eventi in tempo reale? Espongono ingressi e uscite o solo scansioni?
@@ -336,33 +395,71 @@ Servono le risposte prima di scrivere codice.
 6. Come si definiscono capienza, saturazione, ricavo per m² e costo per contatto?
 7. Quali acconti e previsioni entrano nei report e quali sono esclusi?
 8. Quali dati storici 2024 e 2025 sono disponibili?
+9. Quanto vale il peso medio per persona e quanta gente ci sta in uno stand? Proposta: 70 kg e 1 persona per m², entrambi parametri modificabili.
+10. Da quale sconto serve l'approvazione del responsabile? Proposta: oltre il 10%, tutto il resto procede senza approvazione.
+11. Sensori di peso reali o simulati? Proposta: dati simulati, con una prova fisica facoltativa su una pedana.
 
 <a id="roadmap"></a>
 ## Piano di consegna
 
+Dal kickoff del 16 ottobre alla presentazione finale del 4 dicembre 2026, in cinque fasi. In rosso le attività del percorso critico, i rombi sono le date di controllo con il cliente.
+
 ```mermaid
 gantt
-    title ARCADE Milano · Roadmap 2026
+    title Stand up · ARCADE Milano, piano di progetto 2026
     dateFormat YYYY-MM-DD
     axisFormat %d %b
 
-    section Fondazioni
-    Requisiti e modello dati       :crit, req, 2026-10-16, 2026-10-30
-    Modello dati e API definiti :milestone, sal1, 2026-10-30, 0d
+    section Fase 0 · Avvio
+    Kickoff e intervista requisiti        :done, a1, 2026-10-16, 1d
+    Ruoli, Git e convenzioni              :done, a2, 2026-10-17, 2026-10-21
+    Esplorazione dati e anomalie          :a3, 2026-10-19, 2026-10-27
+    Bozza KPI da validare                 :a4, 2026-10-19, 2026-10-29
 
-    section Dimostrazione prodotto
-    Importazione dati 2024 e 2025  :hist, 2026-10-20, 2026-11-06
-    Flusso contratto 2026         :contract, 2026-10-26, 2026-11-13
-    Demo integrata          :milestone, sal2, 2026-11-13, 0d
+    section Fase 1 · Analisi e progettazione
+    Processo commerciale                  :b1, 2026-10-19, 2026-10-28
+    Schema dati su PostgreSQL             :crit, b2, 2026-10-21, 2026-10-29
+    Contratto API OpenAPI                 :crit, b3, 2026-10-22, 2026-10-29
+    Privacy by design e sicurezza         :b4, 2026-10-23, 2026-10-29
+    Mockup back office e portale          :b5, 2026-10-23, 2026-10-29
+    SAL 1 schema e API congelati          :milestone, m1, 2026-10-30, 0d
 
-    section Integrazione e consegna
-    Interfacce e processi          :apps, 2026-11-02, 2026-11-27
-    Report e confronto edizioni    :reports, 2026-11-09, 2026-11-27
-    Validazione e documentazione   :docs, 2026-11-23, 2026-12-04
-    Consegna finale                :milestone, final, 2026-12-04, 0d
+    section Fase 2 · Fondamenta
+    Database e edizione 2024              :crit, c1, 2026-10-31, 2026-11-05
+    Edizione 2025 e anomalie              :crit, c2, 2026-11-05, 2026-11-12
+    API base                              :c3, 2026-11-02, 2026-11-12
+    Back office Power Apps                :c4, 2026-11-02, 2026-11-10
+    Flusso commerciale semplificato       :crit, c5, 2026-11-03, 2026-11-12
+    Primo report Power BI                 :c6, 2026-11-06, 2026-11-12
+    Briefing intermedio                   :milestone, m2, 2026-11-06, 0d
+    SAL 2 demo con due edizioni           :milestone, m3, 2026-11-13, 0d
+
+    section Fase 3 · Sviluppo in autonomia
+    Tornelli e scanner in tempo reale     :d1, 2026-11-16, 2026-11-24
+    App di scansione allo stand           :d2, 2026-11-16, 2026-11-25
+    Cruscotto staff                       :d3, 2026-11-16, 2026-11-27
+    Stima presenze dal peso simulata      :d9, 2026-11-18, 2026-11-26
+    Report direzione                      :d4, 2026-11-16, 2026-11-27
+    Sicurezza RLS e dati dei minori       :d5, 2026-11-17, 2026-11-28
+    Portale espositori                    :d6, 2026-11-20, 2026-12-01
+    Rinnovo dal contratto precedente      :d7, 2026-11-23, 2026-11-28
+    Riconciliazione dei numeri            :crit, d8, 2026-11-25, 2026-12-01
+
+    section Fase 4 · Chiusura e consegna
+    Test end-to-end delle tre fasi        :e1, 2026-11-30, 2026-12-02
+    README, API e repository              :e2, 2026-11-30, 2026-12-03
+    Prove della demo dal vivo             :e3, 2026-12-01, 2026-12-03
+    Presentazione finale e consegna       :milestone, m4, 2026-12-04, 0d
 ```
 
-Le date rappresentano il piano di consegna condiviso. Il GitHub Project sarà la vista operativa per aggiornare stato, priorità, responsabile e scadenze.
+Ogni attività ha una issue nel [GitHub Project](https://github.com/orgs/stand-up-arcade-milan/projects/1), con data di inizio e di fine, fase come milestone e filone (BID, BAD, Comune, Gestione). La vista Roadmap del Project è la versione operativa di questo grafico.
+
+### Percorso critico
+
+- **Schema dati e contratto API** entro il 29 ottobre: tutto il resto dipende da questi due.
+- **Caricamento degli storici con le anomalie gestite** entro il 12 novembre: senza dati la demo del SAL 2 non regge.
+- **Flusso commerciale, dalla pratica al contratto,** entro il 12 novembre: è la fase "prima" da mostrare al SAL 2.
+- **Riconciliazione dei numeri** tra Power BI, cruscotto e portale prima dei test finali.
 
 ### Sequenza di lavoro
 
@@ -399,13 +496,13 @@ Il team è organizzato nelle aree BID e BAD, più alcune responsabilità trasver
 ### BAD · Power Platform
 
 - **Power Apps Developer**: back office per listino, planimetria, contratti, acconti e previsioni, più una prova dell’app di scansione allo stand.
-- **Power Automate / Integration Developer**: flusso dal preventivo al contratto, notifiche, rinnovi e passaggio dei dati commerciali nel modello condiviso.
+- **Power Automate / Integration Developer**: flusso commerciale semplificato, dalla pratica al contratto, notifiche, rinnovi e passaggio dei dati commerciali nel modello condiviso.
 - **Power BI / BI Analyst**: formule dei KPI concordate con il committente, report direzionali e coerenza tra le diverse viste.
 
 ### Responsabilità trasversali
 
 - **Project Manager / Team Lead**: contatto con il committente, aggiornamento settimanale scritto, Gantt, rischi e decisioni.
-- **Sicurezza e privacy**: controlli su API e Power BI, separazione dei dati degli espositori, protezione dei dati personali.
+- **Sicurezza e privacy**: privacy by design, controlli su API e Power BI, separazione dei dati degli espositori, protezione dei dati personali.
 - **Git, documentazione e QA**: repository e README, contratto API, criteri di revisione, test tra i client e preparazione della demo.
 
 <a id="milestone"></a>
@@ -413,9 +510,12 @@ Il team è organizzato nelle aree BID e BAD, più alcune responsabilità trasver
 
 | Data | Risultato atteso |
 | --- | --- |
-| 30 ottobre 2026 · SAL 1 | Modello dati e contratto API definiti, da confermare |
-| 13 novembre 2026 | Dati 2024 e 2025 disponibili e un flusso di contratto 2026 dimostrato |
-| 4 dicembre 2026 · Consegna | MVP integrato, documentazione e demo del prodotto |
+| 30 ottobre 2026 · SAL 1 | Schema dati e contratto API congelati, con il cliente |
+| 6 novembre 2026 · Briefing intermedio | Database con il 2024, back office e prime API funzionanti, bozza dei KPI |
+| 13 novembre 2026 · SAL 2 | Edizioni 2024 e 2025 caricate e un contratto 2026 dal preventivo alla firma |
+| 4 dicembre 2026 · Consegna | Demo dal vivo delle tre fasi, repository unico e documentazione |
+
+Il team manda al cliente un aggiornamento scritto ogni settimana, il 20 e il 27 novembre e il 3 dicembre.
 
 <a id="metodo"></a>
 ## Metodo di lavoro su GitHub
