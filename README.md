@@ -550,6 +550,7 @@ Branch di lavoro:
 ## Documentazione
 
 - [Blueprint digitale](docs/blueprint-digitale.md): traduzione digitale della bozza cartacea, con architettura, processi, schermate, KPI, privacy e decisioni aperte. È la base di discussione con il gruppo e con il committente.
+- [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
 
 <a id="identita-visiva"></a>
 ## Identità visiva
