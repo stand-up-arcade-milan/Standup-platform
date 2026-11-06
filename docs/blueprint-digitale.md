@@ -104,7 +104,7 @@ La proposta coerente con il repository è:
 
 | Ruolo | Risultato atteso |
 | --- | --- |
-| Data Architect / DBA PostgreSQL | Modello dati condiviso, relazioni, vincoli e decisioni documentate. Proposta di congelamento per il SAL 1 del 30 ottobre, da confermare. |
+| Data Architect / DBA PostgreSQL | Modello dati condiviso, relazioni, vincoli e decisioni documentate. Presentati al SAL 1 del 6 novembre 2026. |
 | Data Engineer | Importa dati 2024 e 2025 da biglietteria, tornelli e scanner; profila la qualità, registra anomalie. |
 | Backend Developer · Java/Spring Boot | Definisce e implementa il contratto REST, gli endpoint, la validazione e i controlli di accesso. Il contratto API è una dipendenza del frontend e delle app. |
 | Frontend Developer · React (e i suoi framework) | Realizza il portale web responsive e il cruscotto operativo, inclusa la consultazione dell’affluenza quando la fonte dati lo consente. |
