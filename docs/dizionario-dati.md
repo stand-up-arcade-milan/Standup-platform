@@ -247,3 +247,121 @@ Rilevazioni di peso dello stand, simulate nella demo. Titolare: Controllo access
 | `peso_lordo_kg` | Peso totale letto | INTERNO |
 | `tara_kg` | Peso a vuoto | INTERNO |
 | `fonte` | SIMULATA o SENSORE | INTERNO |
+
+## padiglione (colonne aggiunte nella V007)
+
+Superficie e capienza per presenze e saturazione. Titolare: Organizzazione. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `superficie_mq` | Superficie utile del padiglione in metri quadri | INTERNO |
+| `capienza` | Persone ammesse contemporaneamente nel padiglione | INTERNO |
+
+## parametri_stima (colonna aggiunta nella V007)
+
+Soglia di avviso della saturazione. Titolare: Data Engineering. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `soglia_avviso` | Quota della capienza oltre cui lo staff riceve un avviso, 0,80 di partenza | INTERNO |
+
+## stand (colonne aggiunte nella V007)
+
+Posizione dello stand per la mappa interattiva. Titolare: Organizzazione. Livello della tabella: PUBBLICO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `fila` | Fila dello stand nella griglia della mappa | PUBBLICO |
+| `colonna` | Colonna dello stand nella griglia della mappa | PUBBLICO |
+
+## passaggio_pedana
+
+Conteggi al minuto delle pedane conta-persone, simulati nella demo. Titolare: Controllo accessi. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `anno` | Edizione | INTERNO |
+| `padiglione` | Padiglione della pedana | INTERNO |
+| `minuto` | Minuto del conteggio | INTERNO |
+| `entrati` | Persone entrate nel padiglione in quel minuto | INTERNO |
+| `usciti` | Persone uscite dal padiglione in quel minuto | INTERNO |
+| `fonte` | SIMULATA o SENSORE | INTERNO |
+
+## conteggio_sensore_stand
+
+Persone ferme davanti allo stand contate dal sensore AI, senza immagini. Titolare: Controllo accessi. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `anno` | Edizione | INTERNO |
+| `codice_stand` | Stand del sensore | INTERNO |
+| `minuto` | Minuto del conteggio | INTERNO |
+| `nuove_persone_ferme` | Persone che si sono fermate davanti allo stand in quel minuto | INTERNO |
+| `fonte` | SIMULATA o SENSORE | INTERNO |
+
+## pacchetto_espositore
+
+Pacchetto acquistato dall'espositore in ogni edizione. Titolare: Commerciale. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `anno` | Edizione | INTERNO |
+| `id_espositore` | Espositore | INTERNO |
+| `livello` | BASE oppure PREMIUM, il PREMIUM include la stima dal peso | INTERNO |
+
+## registrazione_visitatore
+
+Registrazione dal modulo del portale, senza nome né email. Titolare: Marketing. Livello della tabella: RISERVATO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_registrazione` | Numero progressivo | INTERNO |
+| `anno` | Edizione | INTERNO |
+| `registrato_il` | Orario della registrazione | INTERNO |
+| `provincia` | Provincia dichiarata, quasi-identificatore | RISERVATO |
+| `fascia_eta` | Fascia d'età dichiarata, solo adulti, quasi-identificatore | RISERVATO |
+| `consenso_marketing` | Consenso a offerte e novità di ARCADE Milano | RISERVATO |
+| `consenso_espositori` | Consenso a essere contattato dagli espositori visitati | RISERVATO |
+| `consensi_aggiornati_il` | Ultima modifica o revoca dei consensi | RISERVATO |
+| `profilabile` | Vero solo con consenso marketing e fascia d'età adulta dichiarata | RISERVATO |
+
+## registrazione_riservata
+
+Nome ed email del visitatore registrato, separati dal resto. Titolare: Marketing. Livello della tabella: PERSONALE.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_registrazione` | Registrazione di appartenenza | PERSONALE |
+| `nome` | Nome del visitatore | PERSONALE |
+| `email` | Email del visitatore | PERSONALE |
+
+## interesse_visitatore
+
+Interessi scelti nel modulo. Titolare: Marketing. Livello della tabella: RISERVATO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_registrazione` | Registrazione di appartenenza | RISERVATO |
+| `interesse` | Interesse scelto nel modulo | RISERVATO |
+
+## lead_magnet
+
+Ciò che il visitatore riceve in cambio del contatto. Titolare: Marketing. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_lead_magnet` | Numero progressivo | INTERNO |
+| `anno` | Edizione | INTERNO |
+| `id_espositore` | Espositore che lo offre, vuoto se lo offre ARCADE Milano | INTERNO |
+| `tipo` | Accesso beta, codice sconto, contenuto esclusivo, torneo, estrazione o demo privata | PUBBLICO |
+| `titolo` | Nome mostrato al visitatore | PUBBLICO |
+| `interesse` | Interesse che il lead magnet conferma | PUBBLICO |
+| `attivo` | Visibile nel portale e allo stand | INTERNO |
+
+## contatto_stand (colonna aggiunta nella V007)
+
+Collegamento tra contatto e lead magnet. Titolare: Marketing. Livello della tabella: INTERNO.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_lead_magnet` | Lead magnet che ha generato il contatto, vuoto per i dati storici | INTERNO |
