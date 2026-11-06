@@ -6,7 +6,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori-da-validare) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Requisiti MVP](docs/requisiti-mvp.md)
 
 </div>
 
@@ -265,12 +265,12 @@ Le entità sono una base di discussione tra BID e BAD. Relazioni e campi vanno d
 - **Rilevazione di peso / Parametri di stima**: stand, orario, peso lordo, tara e fonte, più peso medio, soglia di rumore e capienza per m².
 - **Fonte importata / Esito importazione**: origine, data, righe elaborate e anomalie.
 
-<a id="indicatori-da-validare"></a>
-## Indicatori da validare
+<a id="indicatori"></a>
+## Indicatori
 
-Gli indicatori dipendono dalla disponibilità e dalla qualità dei dati. Nessuna formula è ancora validata e va concordata con il committente.
+Il team ha definito gli indicatori e il committente li ha approvati il 6 novembre 2026. Ogni indicatore dipende dalla disponibilità e dalla qualità dei dati, e dove un dato manca la scelta adottata è dichiarata nei report.
 
-| KPI | Definizione da concordare | Dati necessari |
+| KPI | Definizione | Dati necessari |
 | --- | --- | --- |
 | Visitatori | Biglietti venduti, ingressi effettivi o persone uniche, che non sono la stessa misura | Biglietteria e letture dei varchi |
 | Picco di presenza | Massimo di persone presenti nello stesso intervallo, da ingressi e uscite affidabili | Orari e direzione dei passaggi |
@@ -357,7 +357,7 @@ Servono le risposte prima di scrivere codice.
 <a id="roadmap"></a>
 ## Piano di consegna
 
-Dal kickoff del 16 ottobre alla presentazione finale del 4 dicembre 2026, in cinque fasi.
+Dal kickoff del 16 ottobre alla presentazione finale del 17 dicembre 2026, in cinque fasi.
 
 ```mermaid
 gantt
@@ -369,52 +369,55 @@ gantt
     Kickoff e intervista requisiti        :done, a1, 2026-10-16, 1d
     Ruoli, Git e convenzioni              :done, a2, 2026-10-17, 2026-10-21
     Esplorazione dati e anomalie          :a3, 2026-10-19, 2026-10-27
-    Bozza KPI da validare                 :a4, 2026-10-19, 2026-10-29
+    Definizione KPI                       :done, a4, 2026-10-19, 2026-10-29
 
     section Fase 1 · Analisi e progettazione
+    Requisiti e perimetro MVP             :done, b0, 2026-10-25, 2026-11-06
     Processo commerciale                  :b1, 2026-10-19, 2026-10-28
     Schema dati su PostgreSQL             :crit, b2, 2026-10-21, 2026-10-29
     Contratto API OpenAPI                 :crit, b3, 2026-10-22, 2026-10-29
     Privacy by design e sicurezza         :b4, 2026-10-23, 2026-10-29
     Mockup back office e portale          :b5, 2026-10-23, 2026-10-29
-    SAL 1 schema e API congelati          :milestone, m1, 2026-10-30, 0d
+    Preparazione SAL 1                    :b6, 2026-11-05, 2026-11-06
+    SAL 1                                 :milestone, m1, 2026-11-06, 0d
 
     section Fase 2 · Fondamenta
-    Database e edizione 2024              :crit, c1, 2026-10-31, 2026-11-05
-    Edizione 2025 e anomalie              :crit, c2, 2026-11-05, 2026-11-12
-    API base                              :c3, 2026-11-02, 2026-11-12
-    Back office Power Apps                :c4, 2026-11-02, 2026-11-10
-    Flusso commerciale semplificato       :crit, c5, 2026-11-03, 2026-11-12
-    Primo report Power BI                 :c6, 2026-11-06, 2026-11-12
-    Briefing intermedio                   :milestone, m2, 2026-11-06, 0d
-    SAL 2 demo con due edizioni           :milestone, m3, 2026-11-13, 0d
+    Database e edizione 2024              :crit, c1, 2026-11-09, 2026-11-13
+    API base                              :c3, 2026-11-09, 2026-11-20
+    Back office Power Apps                :c4, 2026-11-09, 2026-11-18
+    Flusso commerciale semplificato       :crit, c5, 2026-11-10, 2026-11-20
+    Edizione 2025 e anomalie              :crit, c2, 2026-11-16, 2026-11-20
+    Dati commerciali nel modello          :c7, 2026-11-16, 2026-11-24
+    Primo report Power BI                 :c6, 2026-11-18, 2026-11-27
+    Prova integrata della demo            :c8, 2026-12-01, 2026-12-03
+    SAL 2 demo con due edizioni           :milestone, m3, 2026-12-04, 0d
 
     section Fase 3 · Sviluppo in autonomia
-    Tornelli e scanner in tempo reale     :d1, 2026-11-16, 2026-11-24
-    App di scansione allo stand           :d2, 2026-11-16, 2026-11-25
-    Cruscotto staff                       :d3, 2026-11-16, 2026-11-27
-    Stima presenze dal peso simulata      :d9, 2026-11-18, 2026-11-26
-    Report direzione                      :d4, 2026-11-16, 2026-11-27
-    Sicurezza RLS e dati dei minori       :d5, 2026-11-17, 2026-11-28
-    Portale espositori                    :d6, 2026-11-20, 2026-12-01
-    Rinnovo dal contratto precedente      :d7, 2026-11-23, 2026-11-28
-    Riconciliazione dei numeri            :crit, d8, 2026-11-25, 2026-12-01
+    Tornelli e scanner in tempo reale     :d1, 2026-11-23, 2026-12-02
+    Sicurezza RLS e dati dei minori       :d5, 2026-11-23, 2026-12-01
+    Stima presenze dal peso simulata      :d9, 2026-11-25, 2026-12-02
+    App di scansione allo stand           :d2, 2026-11-30, 2026-12-09
+    Cruscotto staff                       :d3, 2026-12-01, 2026-12-10
+    Report direzione                      :d4, 2026-12-01, 2026-12-10
+    Portale espositori                    :d6, 2026-12-02, 2026-12-11
+    Rinnovo dal contratto precedente      :d7, 2026-12-07, 2026-12-11
+    Riconciliazione dei numeri            :crit, d8, 2026-12-09, 2026-12-14
 
     section Fase 4 · Chiusura e consegna
-    Test end-to-end delle tre fasi        :e1, 2026-11-30, 2026-12-02
-    README, API e repository              :e2, 2026-11-30, 2026-12-03
-    Prove della demo dal vivo             :e3, 2026-12-01, 2026-12-03
-    Presentazione finale e consegna       :milestone, m4, 2026-12-04, 0d
+    Test end-to-end delle tre fasi        :e1, 2026-12-11, 2026-12-15
+    README, API e repository              :e2, 2026-12-11, 2026-12-16
+    Prove della demo dal vivo             :e3, 2026-12-14, 2026-12-16
+    Presentazione finale e consegna       :milestone, m4, 2026-12-17, 0d
 ```
 
 Ogni attività ha una issue nel [GitHub Project](https://github.com/orgs/stand-up-arcade-milan/projects/1), con data di inizio e di fine, fase come milestone e filone (BID, BAD, Comune, Gestione). La vista Roadmap del Project è la versione operativa di questo grafico.
 
 ### Percorso critico
 
-- **Schema dati e contratto API** entro il 29 ottobre: tutto il resto dipende da questi due.
-- **Caricamento degli storici con le anomalie gestite** entro il 12 novembre: senza dati la demo del SAL 2 non regge.
-- **Flusso commerciale, dalla pratica al contratto,** entro il 12 novembre: è la fase "prima" da mostrare al SAL 2.
-- **Riconciliazione dei numeri** tra Power BI, cruscotto e portale prima dei test finali.
+- **Tabelle commerciali e caricamento degli storici** entro il 20 novembre: senza dati e senza pratiche la demo del SAL 2 non regge.
+- **Flusso commerciale, dalla pratica al contratto,** entro il 20 novembre: è la fase "prima" da mostrare al SAL 2.
+- **Tornelli, sicurezza RLS e stima dal peso** avviati prima del SAL 2: dopo il 4 dicembre restano solo nove giorni lavorativi.
+- **Riconciliazione dei numeri** tra Power BI, cruscotto e portale entro il 14 dicembre, prima dei test finali.
 
 <a id="gruppo"></a>
 ## Gruppo Stand up
@@ -455,12 +458,11 @@ Il team è organizzato nelle aree BID e BAD, più alcune responsabilità trasver
 
 | Data | Risultato atteso |
 | --- | --- |
-| 30 ottobre 2026 · SAL 1 | Schema dati e contratto API congelati, con il cliente |
-| 6 novembre 2026 · Briefing intermedio | Database con il 2024, back office e prime API funzionanti, bozza dei KPI |
-| 13 novembre 2026 · SAL 2 | Edizioni 2024 e 2025 caricate e un contratto 2026 dal preventivo alla firma |
-| 4 dicembre 2026 · Consegna | Demo dal vivo delle tre fasi, repository unico e documentazione |
+| 6 novembre 2026 · SAL 1 | Requisiti, schema dati, contratto API e mockup presentati, KPI approvati dal cliente |
+| 4 dicembre 2026 · SAL 2 | Edizioni 2024 e 2025 caricate, API base e un contratto 2026 dalla pratica alla firma |
+| 17 dicembre 2026 · Presentazione finale | Demo dal vivo delle tre fasi, repository unico e documentazione |
 
-Il team manda al cliente un aggiornamento scritto ogni settimana, il 20 e il 27 novembre e il 3 dicembre.
+Il team manda al cliente un aggiornamento scritto il 20 e il 27 novembre e l'11 dicembre.
 
 <a id="metodo"></a>
 ## Metodo di lavoro su GitHub
@@ -495,6 +497,7 @@ Branch di lavoro:
 ## Documentazione
 
 - [Blueprint digitale](docs/blueprint-digitale.md): traduzione digitale della bozza cartacea, con architettura, processi, schermate, KPI, privacy e decisioni aperte. È la base di discussione con il gruppo e con il committente.
+- [Requisiti e perimetro dell'MVP](docs/requisiti-mvp.md): utenti, ruoli, requisiti con criteri di accettazione, dati gestiti e confini dell'MVP.
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
@@ -516,4 +519,4 @@ La palette ufficiale di Stand up combina un fondo scuro con accenti luminosi e u
 <a id="stato-del-progetto"></a>
 ## Stato del progetto
 
-Repository inizializzato. Il blueprint è la base comune da validare con il gruppo e con il committente. Modello dati, API, indicatori, backlog e componenti applicativi saranno sviluppati per fasi, a partire dalle decisioni aperte.
+SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro dell'MVP sono approvati. Schema dati, caricamento degli storici e documentazione dei dati sono nel repository. Ora si sviluppano tabelle commerciali, API, back office e report, verso il SAL 2 del 4 dicembre.
