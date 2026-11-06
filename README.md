@@ -59,6 +59,8 @@ flowchart LR
     TICKET["Biglietteria esterna"]
     TURN["Tornelli e lettori"]
     SENS["Sensori di peso agli stand<br/>simulati nella demo"]
+    PED["Pedane conta-persone nei padiglioni<br/>simulate nella demo"]
+    AI["Sensori AI agli stand<br/>simulati nella demo"]
     HIST["Dati storici 2024 e 2025"]
 
     D --> BI
@@ -79,6 +81,8 @@ flowchart LR
     TURN --> API
     HIST --> API
     SENS --> API
+    PED --> API
+    AI --> API
 
     classDef people fill:#3f826d,color:#f7f7ff,stroke:#cbff8c,stroke-width:2px
     classDef ui fill:#171219,color:#f7f7ff,stroke:#3f826d,stroke-width:2px
@@ -86,7 +90,7 @@ flowchart LR
     classDef store fill:#cbff8c,color:#171219,stroke:#3f826d,stroke-width:2px
     class D,C,S,E,V people
     class WEB,PA,SCAN,BI,DOC ui
-    class API,FLOW,TICKET,TURN,HIST,SENS platform
+    class API,FLOW,TICKET,TURN,HIST,SENS,PED,AI platform
     class DB store
 ```
 
@@ -247,6 +251,7 @@ Il primo mockup usa un’unica navigazione, con pagine e azioni visibili in base
 | Area espositore | Espositore | Dati della propria azienda, stand, documenti, servizi e riepilogo autorizzato |
 | Scansione allo stand | Staff o espositore autorizzato | Lettura QR, esito, orario e conteggio, con dati del visitatore solo se necessari e autorizzati |
 | Biglietteria e accessi | Staff autorizzato | Verifica del biglietto, esito del varco, orario e gestione delle eccezioni |
+| Mappa interattiva | Visitatori e staff | Ricerca di un espositore, percorso fino allo stand, aree affollate, e per la direzione la mappa di calore |
 | Report | Direzione e ruoli autorizzati | Filtri per edizione, giornata, area e fonte, con le definizioni dei KPI |
 
 <a id="modello-dati"></a>
@@ -263,6 +268,11 @@ Le entità sono una base di discussione tra BID e BAD. Relazioni e campi vanno d
 - **Scansione stand / Lead**: stand, orario, operatore e identificativo consentito.
 - **Persona staff / Turno / Badge**: ruolo, area, orario e stato del badge.
 - **Rilevazione di peso / Parametri di stima**: stand, orario, peso lordo, tara e fonte, più peso medio, soglia di rumore e capienza per m².
+- **Passaggio alle pedane**: padiglione, minuto, entrati, usciti e fonte, per le persone presenti in ogni padiglione.
+- **Conteggio del sensore AI**: stand, minuto e nuove persone ferme, senza immagini.
+- **Pacchetto dell'espositore**: BASE o PREMIUM per edizione, il PREMIUM sblocca la stima dal peso.
+- **Lead magnet**: accesso beta, codice sconto, contenuto esclusivo, torneo, estrazione o demo privata, offerti da ARCADE Milano o da un espositore. Ogni contatto 2026 registra il lead magnet che lo ha generato.
+- **Registrazione del visitatore**: provincia, fascia d'età adulta, interessi e due consensi separati, con nome ed email in una tabella riservata.
 - **Fonte importata / Esito importazione**: origine, data, righe elaborate e anomalie.
 
 <a id="indicatori"></a>
@@ -270,16 +280,20 @@ Le entità sono una base di discussione tra BID e BAD. Relazioni e campi vanno d
 
 Il team ha definito gli indicatori e il committente li ha approvati il 6 novembre 2026. Ogni indicatore dipende dalla disponibilità e dalla qualità dei dati, e dove un dato manca la scelta adottata è dichiarata nei report.
 
-| KPI | Definizione | Dati necessari |
-| --- | --- | --- |
-| Visitatori | Biglietti venduti, ingressi effettivi o persone uniche, che non sono la stessa misura | Biglietteria e letture dei varchi |
-| Picco di presenza | Massimo di persone presenti nello stesso intervallo, da ingressi e uscite affidabili | Orari e direzione dei passaggi |
-| Saturazione spazi | Occupazione: denominatore, area e soglia da definire | Planimetria, superficie e presenze |
-| Presenze nello stand (stima dal peso) | Persone stimate dal peso netto diviso il peso medio, con margine d’errore dichiarato | Sensori di peso, tara e parametri di stima |
-| Visitatori per m² | Persone nell’area divise per superficie utile e intervallo | Presenze per area e m² |
-| Ricavo per m² | Ricavo attribuito all’area diviso per superficie, con lordo o netto e periodo da chiarire | Contratti, incassi e planimetria |
-| Contatti / lead | Scansioni valide e non duplicate, secondo consenso e regole concordate | Scanner, stand, orario |
-| Costo per contatto | Costi inclusi divisi per lead validi, con deduplicazione da definire | Costi, campagne e lead |
+| KPI | Formula | Fonte | Note |
+| --- | --- | --- | --- |
+| Visitatori | Somma delle persone negli accessi con esito INGRESSO | `accesso` | Misura principale. Accanto: biglietti venduti (somma di `quantita`, un Family vale 4) e persone uniche (biglietti con almeno un ingresso) |
+| Picco di presenza | Massimo, nella giornata, delle persone presenti in tutta la fiera nello stesso minuto | `v_picco_presenza_giorno` | Presenti = entrati meno usciti dalle pedane dall'inizio della giornata. Per il 2024 e il 2025 è stimato come ingressi delle ultime 4 ore (`v_presenze_stimate_ora`) |
+| Saturazione spazi | Persone presenti nel padiglione ÷ capienza del padiglione × 100 | `v_presenze_padiglione` | Avviso allo staff oltre l'80% (`soglia_avviso`) |
+| Visitatori per m² | Media delle persone presenti nel quarto d'ora ÷ superficie utile del padiglione | `v_densita_padiglione_15min` | Calcolato ogni 15 minuti |
+| Presenze nello stand, dal peso | (peso lordo − tara) ÷ peso medio, al minuto | `v_presenze_stand_peso` | Solo per gli espositori PREMIUM. Peso medio 70 kg, variazioni sotto i 20 kg ignorate |
+| Persone ferme allo stand | Somma delle nuove persone ferme contate dal sensore AI | `conteggio_sensore_stand` | Il sensore analizza la sagoma, non riconosce nessuno e non salva immagini. Uso reale solo dopo la DPIA |
+| Resa dello stand | Contatti ÷ visite × 100, e contatti ÷ persone ferme × 100 | `v_stand_conversione` | L'espositore vede la propria e la media anonima della fiera |
+| Ricavo per m² | Somma dei contratti firmati dell'area, al netto di IVA e sconti ÷ m² venduti dell'area | Contratti, `stand.superficie_mq` | Prezzi e superfici simulati finché il cliente non li fornisce |
+| Contatti qualificati (MQL) | Contatti adulti, con consenso e interesse dichiarato, che hanno richiesto un lead magnet, una sola volta per persona e stand | `v_mql_stand` | È ciò che consegniamo agli espositori. Per il 2025, senza lead magnet, valgono i contatti utilizzabili |
+| Quota MQL | MQL ÷ contatti raccolti × 100 | `v_mql_stand` | Misura la qualità dei contatti dello stand |
+| Resa dei lead magnet | MQL generati da ogni lead magnet | `v_lead_magnet_resa` | Indica quali lead magnet funzionano meglio |
+| Costo per MQL | Costi dell'edizione ÷ MQL | Parametro costi, `v_mql_stand` | Costi come parametro per edizione, simulati e dichiarati |
 
 Oltre a questi, la prima proposta comprende espositori per edizione e stato del contratto, offerte per valore e stato, stand venduti e disponibilità residua, il confronto tra le edizioni 2024, 2025 e 2026 e un riepilogo per espositore con accesso limitato alla propria organizzazione.
 
@@ -288,7 +302,7 @@ Per ogni indicatore saranno documentati proprietario, definizione, fonte, formul
 <a id="stima-peso"></a>
 ### Stima delle presenze dal peso
 
-Per valutare l’affluenza in uno spazio circoscritto come lo stand si può usare il peso rilevato in quel momento. Le scelte sotto sono già fatte e sono tutte modificabili da parametro.
+Per valutare l’affluenza in uno spazio circoscritto come lo stand si può usare il peso rilevato in quel momento. È un indicatore in più, riservato agli espositori con il pacchetto **PREMIUM**: il filtro è nel database, quindi un espositore BASE non lo vede nemmeno chiamando l'API. Le scelte sotto sono già fatte e sono tutte modificabili da parametro.
 
 | Tema | Soluzione proposta | Perché |
 | --- | --- | --- |
@@ -335,7 +349,10 @@ La piattaforma nasce con la protezione dei dati nel progetto, come chiede il GDP
 | Scansione allo stand (lead) | Contatti per l'espositore, con consenso | Solo l'espositore di quello stand | Fino alla consegna del riepilogo post-fiera |
 | Staff: nome, ruolo e turno | Organizzazione del servizio | Responsabili dello staff | Fino alla chiusura dell'edizione |
 | Codice fiscale, età, curriculum dello staff | Da verificare | Nessuno finché non è confermato che servano | Non raccolti per ora |
-| Peso rilevato nello stand | Stima delle presenze | Staff e direzione | Nessun dato personale |
+| Peso rilevato nello stand | Stima delle presenze | Staff, direzione ed espositori PREMIUM del proprio stand | Nessun dato personale |
+| Conteggi di pedane e sensori AI | Presenze e persone ferme | Staff, direzione, espositore per il proprio stand | Nessun dato personale, nessuna immagine |
+| Registrazione del visitatore: nome ed email | Invio del biglietto e, con consenso, offerte | Solo il responsabile dei dati | Fino alla revoca del consenso o alla fine dell'edizione |
+| Fascia d'età, provincia e interessi | Profilazione, solo adulti con consenso | Direzione, solo come totali | Fino alla revoca del consenso |
 
 <a id="decisioni-aperte"></a>
 ## Decisioni aperte
@@ -501,7 +518,7 @@ Branch di lavoro:
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
-- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli e filtro per espositore.
+- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL.
 
 <a id="identita-visiva"></a>
 ## Identità visiva
