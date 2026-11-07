@@ -18,12 +18,6 @@ Palette ufficiale di Stand up, usata nei documenti e nei mockup del progetto.
 171219,cbff8c,c03221,f7f7ff,3f826d
 ```
 
-### HEX
-
-```text
-171219,cbff8c,c03221,f7f7ff,3f826d
-```
-
 ### HEX con cancelletto
 
 ```text
