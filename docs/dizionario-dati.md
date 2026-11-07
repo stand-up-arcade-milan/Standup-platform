@@ -1,6 +1,6 @@
 # Dizionario dati
 
-Descrive ogni colonna del database: significato, livello di sensibilità e titolare. È generato da `scripts/dati/genera_dizionario.py` e vive anche nel database, nella tabella `arcade.dizionario_dati`.
+Descrive ogni colonna del database: significato, livello di sensibilità e titolare. Le sezioni fino alla V007 sono generate da `scripts/dati/genera_dizionario.py`, quelle della V008 e della V009 vengono dalle migrazioni stesse. Vive anche nel database, nella tabella `arcade.dizionario_dati`.
 
 | Livello | Significato | Chi può vederlo |
 |---|---|---|
@@ -365,3 +365,264 @@ Collegamento tra contatto e lead magnet. Titolare: Marketing. Livello della tabe
 | Colonna | Descrizione | Livello |
 |---|---|---|
 | `id_lead_magnet` | Lead magnet che ha generato il contatto, vuoto per i dati storici | INTERNO |
+
+## edizione (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `sede` | Sede della fiera | PUBBLICO |
+| `stato` | PIANIFICATA, ATTIVA oppure CONCLUSA | INTERNO |
+
+## padiglione (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `nome` | Nome leggibile del padiglione | PUBBLICO |
+
+## stand (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `disponibile` | Falso se lo stand è tolto dalla vendita, per esempio per un vincolo di allestimento | INTERNO |
+
+## accesso (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `motivo_rifiuto` | Perché l'ingresso è stato rifiutato, vuoto per gli ingressi e per i rifiuti storici | INTERNO |
+
+## parametri_stima (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `costi_edizione_eur` | Costi dell'edizione, parametro del costo per MQL, simulato finché il cliente non lo fornisce | INTERNO |
+
+## registrazione_riservata (colonne aggiunte nella V008)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `token_revoca_hash` | Impronta del token con cui il visitatore modifica i consensi, il token in chiaro non si conserva | RISERVATO |
+
+## scansione_stand
+
+Scansioni 2026 di uno stand, una riga per scansione. Titolare: Controllo accessi. Livello della tabella: RISERVATO. Aggiunta nella V008.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_evento` | Chiave del registro unico, per ripetere un invio senza duplicati | INTERNO |
+| `anno` | Edizione | INTERNO |
+| `codice_stand` | Stand dove è avvenuta la scansione | INTERNO |
+| `operatore_id` | Identificativo di chi ha scansionato, solo interno | RISERVATO |
+| `rilevata_il` | Orario della scansione | INTERNO |
+| `ticket_ref` | Identificativo pseudonimizzato del biglietto, non contiene nome o email | RISERVATO |
+| `id_contatto` | Contatto creato dalla scansione, vuoto se il visitatore non lo ha lasciato | INTERNO |
+| `duplicata` | Vero se lo stesso biglietto era già stato scansionato nello stand, non viene conteggiata | INTERNO |
+| `registrata_il` | Orario in cui il sistema ha registrato la scansione | INTERNO |
+
+## parametri_stima (colonne aggiunte nella V009)
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `soglia_sconto_approvazione` | Sconto in percentuale oltre il quale serve l'approvazione, 10 di partenza | INTERNO |
+
+## categoria_espositore
+
+Categorie degli espositori mostrate nel portale. Titolare: Organizzazione. Livello della tabella: PUBBLICO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `codice` | Codice della categoria | PUBBLICO |
+| `nome` | Nome mostrato nel portale | PUBBLICO |
+
+## profilo_espositore
+
+Profilo pubblico dell'espositore. Titolare: Organizzazione. Livello della tabella: PUBBLICO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_espositore` | Espositore | PUBBLICO |
+| `nome_pubblico` | Nome mostrato nel portale | PUBBLICO |
+| `descrizione` | Presentazione dell'espositore | PUBBLICO |
+| `logo_url` | Indirizzo del logo | PUBBLICO |
+| `sito_web` | Sito dell'espositore | PUBBLICO |
+| `in_evidenza` | Vero se l'espositore è messo in evidenza nel portale | PUBBLICO |
+
+## espositore_categoria
+
+Categorie di ogni espositore. Titolare: Organizzazione. Livello della tabella: PUBBLICO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_espositore` | Espositore | PUBBLICO |
+| `codice_categoria` | Categoria dell'espositore | PUBBLICO |
+
+## listino_voce
+
+Listino prezzi per edizione, al netto di IVA. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `anno` | Edizione | INTERNO |
+| `codice_voce` | Codice della voce di listino | INTERNO |
+| `descrizione` | Nome leggibile della voce | INTERNO |
+| `tipo` | STAND, PACCHETTO oppure SERVIZIO | INTERNO |
+| `unita` | MQ se il prezzo è per metro quadro, FORFAIT se è a corpo | INTERNO |
+| `prezzo_eur` | Prezzo al netto di IVA, simulato finché il cliente non fornisce il listino | INTERNO |
+
+## pratica
+
+Pratica commerciale di un espositore, dal preventivo al contratto. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_pratica` | Identificativo della pratica | INTERNO |
+| `anno` | Edizione | INTERNO |
+| `id_espositore` | Espositore della pratica | INTERNO |
+| `codice_stand` | Stand scelto, obbligatorio dopo la bozza | INTERNO |
+| `stato` | BOZZA, INVIATA, FIRMATA oppure ACCONTO_RICEVUTO, solo in avanti | INTERNO |
+| `pacchetto` | BASE o PREMIUM, alla firma diventa il pacchetto dell'espositore | INTERNO |
+| `sconto_percentuale` | Sconto sull'imponibile del listino | INTERNO |
+| `approvazione_richiesta` | Vero se lo sconto supera la soglia, calcolato dal database | INTERNO |
+| `id_pratica_precedente` | Pratica dell'edizione precedente da cui nasce il rinnovo | INTERNO |
+| `creata_il` | Orario di creazione | INTERNO |
+| `aggiornata_il` | Orario dell'ultima modifica, aggiornato dal database | INTERNO |
+
+## voce_pratica
+
+Voci del listino acquistate in una pratica, con il prezzo applicato. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_pratica` | Pratica di appartenenza | INTERNO |
+| `anno` | Edizione della pratica e del listino | INTERNO |
+| `codice_voce` | Voce di listino acquistata | INTERNO |
+| `quantita` | Metri quadri o numero di forfait | INTERNO |
+| `prezzo_unitario_eur` | Prezzo applicato al momento dell'offerta, resta invariato se il listino cambia | INTERNO |
+
+## documento_pratica
+
+Documenti collegati a una pratica, conservati su SharePoint. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_documento` | Identificativo del documento | INTERNO |
+| `id_pratica` | Pratica di appartenenza | INTERNO |
+| `tipo` | OFFERTA, CONTRATTO oppure ALTRO | INTERNO |
+| `nome` | Nome del file | INTERNO |
+| `url` | Collegamento al documento su SharePoint | INTERNO |
+| `creato_il` | Orario di creazione | INTERNO |
+
+## acconto
+
+Acconti ricevuti per una pratica. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_acconto` | Identificativo dell'acconto | INTERNO |
+| `id_pratica` | Pratica di appartenenza | INTERNO |
+| `importo_eur` | Importo ricevuto, i pagamenti non passano dalla piattaforma | INTERNO |
+| `ricevuto_il` | Quando l'acconto è stato ricevuto | INTERNO |
+| `riferimento` | Riferimento del bonifico o della ricevuta | INTERNO |
+
+## richiesta
+
+Richieste arrivate dal sito, senza i dati di contatto. Titolare: Commerciale. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_richiesta` | Identificativo della richiesta | INTERNO |
+| `tipo` | ESPOSITORE oppure VISITATORE | INTERNO |
+| `stato` | NUOVA, IN_LAVORAZIONE oppure CHIUSA | INTERNO |
+| `anno` | Edizione richiesta | INTERNO |
+| `azienda` | Nome dell'azienda che chiede lo stand | INTERNO |
+| `categoria` | Categoria indicata nella richiesta | INTERNO |
+| `metri_quadri_desiderati` | Metri quadri richiesti | INTERNO |
+| `note` | Note libere della richiesta | INTERNO |
+| `consenso_privacy` | Consenso al trattamento dei dati per gestire la richiesta | INTERNO |
+| `consenso_marketing` | Consenso a ricevere novità, per le richieste dei visitatori | INTERNO |
+| `id_pratica` | Pratica creata dalla richiesta | INTERNO |
+| `creata_il` | Orario della richiesta | INTERNO |
+
+## richiesta_riservata
+
+Nome e email di chi ha fatto la richiesta, unico dato personale diretto di questa area. Titolare: Commerciale. Livello della tabella: PERSONALE. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_richiesta` | Richiesta di appartenenza | PERSONALE |
+| `referente` | Nome del referente o del visitatore | PERSONALE |
+| `email` | Email del referente o del visitatore | PERSONALE |
+
+## account_espositore
+
+Account di accesso degli espositori. Titolare: Sicurezza. Livello della tabella: PERSONALE. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_account` | Identificativo dell'account | INTERNO |
+| `id_espositore` | Espositore a cui è collegato l'account | INTERNO |
+| `email` | Email di accesso | PERSONALE |
+| `password_hash` | Impronta della password, mai la password | RISERVATO |
+| `attivo` | Falso se l'account è disattivato | INTERNO |
+| `creato_il` | Orario di attivazione | INTERNO |
+| `ultimo_accesso` | Orario dell'ultimo accesso | INTERNO |
+
+## invito_espositore
+
+Inviti monouso per attivare un account. Titolare: Sicurezza. Livello della tabella: PERSONALE. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `token_hash` | Impronta del token dell'invito, il token in chiaro non si conserva | RISERVATO |
+| `id_espositore` | Espositore invitato | INTERNO |
+| `email` | Email a cui è stato inviato l'invito | PERSONALE |
+| `scade_il` | Scadenza dell'invito | INTERNO |
+| `usato_il` | Quando l'invito è stato usato, vuoto se ancora valido | INTERNO |
+
+## avviso
+
+Avvisi di servizio per visitatori, espositori e staff. Titolare: Organizzazione. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_avviso` | Identificativo dell'avviso | INTERNO |
+| `titolo` | Titolo dell'avviso | PUBBLICO |
+| `testo` | Testo dell'avviso | PUBBLICO |
+| `pubblico` | A chi è rivolto: VISITATORI, ESPOSITORI oppure STAFF | INTERNO |
+| `pubblicato_il` | Orario di pubblicazione | INTERNO |
+| `attivo` | Falso se l'avviso è stato disattivato | INTERNO |
+
+## lotto_kpi
+
+Lotti di KPI calcolati da BAD e ricevuti dall'API. Titolare: Data Engineering. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `batch_id` | Identificativo stabile del lotto, rende ripetibile l'invio | INTERNO |
+| `anno` | Edizione dei KPI | INTERNO |
+| `calcolato_il` | Quando BAD ha calcolato i KPI | INTERNO |
+| `formula_versione` | Versione delle formule usate | INTERNO |
+| `intervallo_dati_dal` | Inizio dei dati usati nel calcolo | INTERNO |
+| `intervallo_dati_al` | Fine dei dati usati nel calcolo | INTERNO |
+| `ricevuto_il` | Quando il lotto è stato ricevuto | INTERNO |
+
+## kpi_osservazione
+
+Singolo valore di KPI dentro un lotto. Titolare: Data Engineering. Livello della tabella: INTERNO. Aggiunta nella V009.
+
+| Colonna | Descrizione | Livello |
+|---|---|---|
+| `id_osservazione` | Numero progressivo | INTERNO |
+| `batch_id` | Lotto di appartenenza | INTERNO |
+| `codice` | Codice dell'indicatore, per esempio picco_presenza | INTERNO |
+| `valore` | Valore calcolato | INTERNO |
+| `unita` | Unità di misura, per esempio persone o euro | INTERNO |
+| `periodo_dal` | Inizio del periodo misurato | INTERNO |
+| `periodo_al` | Fine del periodo misurato | INTERNO |
+| `dimensioni` | Filtri come padiglione, stand o categoria, mai dati personali | INTERNO |
+| `fonte` | Tabelle o sistemi da cui nasce il valore | INTERNO |
+| `qualita` | OK, ATTENZIONE oppure DA_VERIFICARE | INTERNO |
+| `flag_qualita` | Anomalie che riguardano il valore | INTERNO |
+| `stimato` | Vero se il valore è una stima e non un conteggio | INTERNO |
+| `simulato` | Vero se i dati di partenza sono simulati | INTERNO |
+| `nota` | Nota esplicativa facoltativa | INTERNO |
