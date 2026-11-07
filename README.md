@@ -6,7 +6,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Requisiti MVP](docs/requisiti-mvp.md)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Requisiti MVP](docs/requisiti-mvp.md) · [Modello ER](docs/modello-er.md)
 
 </div>
 
@@ -17,7 +17,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 ARCADE Milano è un festival di tre giorni dedicato al gaming e alla cultura pop. La piattaforma aiuta il team a preparare l’edizione, gestire espositori e sponsor, seguire le attività durante l’evento e misurare i risultati dopo la chiusura.
 
-E' pensato per fare bene tre cose:
+È pensato per fare bene tre cose:
 
 1. **Vendere lo stand**, dal preventivo al contratto, con acconti e previsioni sotto controllo.
 2. **Seguire l’affluenza**, cioè quante persone entrano, quando e dove, in diretta se i tornelli lo consentono.
@@ -197,6 +197,15 @@ sequenceDiagram
 
 Avvia lo scheletro completo con `docker compose up --build`: PostgreSQL, API Spring Boot e frontend React partono insieme. Le credenziali predefinite sono condivise solo per lo sviluppo locale; un file `.env` facoltativo può sovrascriverle. Il container PostgreSQL carica `database/migrations/` solo quando inizializza un volume vuoto.
 
+Per avviare solo il database e controllare che lo schema sia stato creato, con le credenziali predefinite:
+
+```bash
+docker compose up -d db
+docker compose exec db psql -U arcade_admin -d arcade -c '\dt arcade.*'
+```
+
+Per ripartire da zero, cancellando i dati locali, si usa `docker compose down -v`.
+
 | Servizio | Indirizzo dal browser/host | Indirizzo tra container |
 | --- | --- | --- |
 | Frontend Vite | `http://localhost:5173` | `frontend:5173` |
@@ -272,7 +281,7 @@ Il primo mockup usa un’unica navigazione, con pagine e azioni visibili in base
 <a id="modello-dati"></a>
 ## Modello dati iniziale
 
-Le entità sono una base di discussione tra BID e BAD. Relazioni e campi vanno definiti nel modello ER prima dell’implementazione.
+Le entità sono la base dello schema `arcade` di PostgreSQL. Il [modello ER](docs/modello-er.md) mostra tabelle, chiavi e relazioni come sono nelle migrazioni da `V001` a `V007`.
 
 - **Edizione**: anno, date, sede e stato.
 - **Organizzazione / Espositore**: anagrafica, referente e stato.
@@ -410,8 +419,8 @@ gantt
     Contratto API OpenAPI                 :crit, b3, 2026-10-22, 2026-10-29
     Privacy by design e sicurezza         :b4, 2026-10-23, 2026-10-29
     Mockup back office e portale          :b5, 2026-10-23, 2026-10-29
-    Preparazione SAL 1                    :b6, 2026-11-05, 2026-11-06
-    SAL 1                                 :milestone, m1, 2026-11-06, 0d
+    Preparazione SAL 1                    :done, b6, 2026-11-05, 2026-11-06
+    SAL 1                                 :done, milestone, m1, 2026-11-06, 0d
 
     section Fase 2 · Fondamenta
     Database e edizione 2024              :crit, c1, 2026-11-09, 2026-11-13
@@ -424,7 +433,7 @@ gantt
     Prova integrata della demo            :c8, 2026-12-01, 2026-12-03
     SAL 2 demo con due edizioni           :milestone, m3, 2026-12-04, 0d
 
-    section Fase 3 · Sviluppo in autonomia
+    section Fase 3 · Moduli in autonomia e integrazioni
     Tornelli e scanner in tempo reale     :d1, 2026-11-23, 2026-12-02
     Sicurezza RLS e dati dei minori       :d5, 2026-11-23, 2026-12-01
     Stima presenze dal peso simulata      :d9, 2026-11-25, 2026-12-02
@@ -512,16 +521,19 @@ Branch di lavoro:
 - `fix/nome-correzione` per una correzione.
 - `docs/nome-documento` per la documentazione.
 
-<a id="struttura-prevista"></a>
-## Struttura prevista
+<a id="struttura-del-repository"></a>
+## Struttura del repository
 
 ```text
 .
-├── backend/              # API Java e Spring Boot
-├── database/             # Migrazioni PostgreSQL e dati dimostrativi
-├── docs/                 # Blueprint, architettura, modello dati, sicurezza e roadmap
-├── frontend/             # Applicazione React
-├── power-platform/       # Specifiche Power Apps, Power Automate e Power BI
+├── backend/ # API Java e Spring Boot
+├── database/ # Migrazioni PostgreSQL, da V001 a V007
+├── docs/ # Blueprint, requisiti, modello ER, dati storici, API e identità visiva
+├── frontend/ # Applicazione React con Vite, Bun e TanStack Router
+├── scripts/ # Importazione dei dati storici e del Gantt
+├── power-platform/ # Specifiche Power Apps, Power Automate e Power BI, da creare
+├── compose.yaml # Database, API e frontend in locale con Docker
+├── Dockerfile # Immagine del database con le migrazioni
 └── README.md
 ```
 
@@ -530,6 +542,7 @@ Branch di lavoro:
 
 - [Blueprint digitale](docs/blueprint-digitale.md): traduzione digitale della bozza cartacea, con architettura, processi, schermate, KPI, privacy e decisioni aperte. È la base di discussione con il gruppo e con il committente.
 - [Requisiti e perimetro dell'MVP](docs/requisiti-mvp.md): utenti, ruoli, requisiti con criteri di accettazione, dati gestiti e confini dell'MVP.
+- [Modello ER](docs/modello-er.md): diagramma completo dello schema `arcade`, con le novità del SAL 1, i dati personali separati e le regole di visibilità.
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
@@ -555,4 +568,4 @@ Codici ed esportazioni: [palette colori](docs/palette-colori.md).
 <a id="stato-del-progetto"></a>
 ## Stato del progetto
 
-SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro dell'MVP sono approvati. Schema dati, caricamento degli storici e documentazione dei dati sono nel repository. Ora si sviluppano tabelle commerciali, API, back office e report, verso il SAL 2 del 4 dicembre.
+SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro dell'MVP sono approvati. Schema dati, caricamento degli storici e documentazione dei dati sono nel repository. Lo scheletro tecnico è avviato: PostgreSQL in Docker con le migrazioni, bozza del contratto OpenAPI, backend Spring Boot e frontend React con Vite. Ora si sviluppano tabelle commerciali, API, back office e report, verso il SAL 2 del 4 dicembre.
