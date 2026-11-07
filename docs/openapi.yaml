@@ -20,6 +20,7 @@ servers:
   - url: /api/v1
     description: API locale o ambiente applicativo
 tags:
+  - name: Sistema
   - name: Pubblico
   - name: Autenticazione
   - name: Commerciale
@@ -30,6 +31,20 @@ tags:
   - name: Amministrazione
 security: []
 paths:
+  /health:
+    get:
+      tags: [Sistema]
+      summary: Verifica che l'API di base sia raggiungibile
+      operationId: getSystemHealth
+      security: []
+      responses:
+        '200':
+          description: Il servizio API è attivo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiHealth' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
   /edizioni:
     get:
       tags: [Pubblico]
@@ -1397,6 +1412,12 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    ApiHealth:
+      type: object
+      required: [service, status]
+      properties:
+        service: { type: string, example: standup-platform-api }
+        status: { type: string, enum: [UP] }
     Problem:
       type: object
       required: [status, code, title, requestId]

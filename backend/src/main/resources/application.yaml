@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: standup-platform-api
+  datasource:
+    # Inside Compose, `db` resolves to the PostgreSQL service on port 5432.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/arcade}
+    username: ${SPRING_DATASOURCE_USERNAME:arcade_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:arcade_dev_only}
+
+server:
+  # Vite and the browser reach this port through Compose's published host port.
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      # Keep the management surface small; this scaffold only needs health.
+      exposure:
+        include: health
+  endpoint:
+    health:
+      # The local diagnostic page uses this to show the PostgreSQL health component.
+      show-details: always
