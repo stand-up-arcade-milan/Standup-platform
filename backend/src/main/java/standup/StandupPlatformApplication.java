@@ -1,4 +1,4 @@
-package it.standup.arcade;
+segepackage standup;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

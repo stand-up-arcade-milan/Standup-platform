@@ -12,7 +12,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>it.standup.arcade</groupId>
+    <groupId>standup</groupId>
     <artifactId>standup-platform-api</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <name>standup-platform-api</name>
