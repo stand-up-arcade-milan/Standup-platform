@@ -195,7 +195,15 @@ sequenceDiagram
 <a id="stack"></a>
 ## Stack tecnologico
 
-Per avviare il solo database PostgreSQL in locale, esegui `docker compose up -d --build`: Compose usa `arcade_dev_only`, una password condivisa solo per lo sviluppo. `.env` è facoltativo e può sovrascriverla. Non usare questa password fuori dallo sviluppo locale; gli ambienti condivisi e di produzione devono fornire credenziali proprie. Il container carica `database/migrations/` solo quando inizializza un volume vuoto; le modifiche successive allo schema andranno gestite con migrazioni applicative.
+Avvia lo scheletro completo con `docker compose up --build`: PostgreSQL, API Spring Boot e frontend React partono insieme. Le credenziali predefinite sono condivise solo per lo sviluppo locale; un file `.env` facoltativo può sovrascriverle. Il container PostgreSQL carica `database/migrations/` solo quando inizializza un volume vuoto.
+
+| Servizio | Indirizzo dal browser/host | Indirizzo tra container |
+| --- | --- | --- |
+| Frontend Vite | `http://localhost:5173` | `frontend:5173` |
+| API Spring Boot | `http://localhost:8080` | `backend:8080` |
+| PostgreSQL | `localhost:5432` | `db:5432` |
+
+Il frontend inoltra `/api` e `/actuator` a `backend:8080` tramite il proxy Vite. L'endpoint `GET /api/v1/health` è un controllo di avvio; `/actuator/health` mostra anche lo stato della connessione PostgreSQL in questo setup locale.
 
 | Componente | Tecnologia | Responsabilità |
 | --- | --- | --- |

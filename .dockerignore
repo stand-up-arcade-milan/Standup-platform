@@ -2,5 +2,9 @@
 .env
 .env.*
 !.env.example
+.vscode/
+**/node_modules/
+**/target/
+**/dist/
 dati-storici/
 **/*.csv

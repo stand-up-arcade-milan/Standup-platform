@@ -35,6 +35,11 @@ dati-storici/
 # Impostazioni locali dell'editor
 .vscode/
 
+# Output locali di build
+/backend/target/
+/frontend/node_modules/
+/frontend/dist/
+
 # Bozze sorgente locali del blueprint, non versionate
 /docs/fonti/ARCADE_Milano_Blueprint_v2.pdf
 /docs/fonti/Standup-blueprint.md

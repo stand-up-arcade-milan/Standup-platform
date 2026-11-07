@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: arcade
-      POSTGRES_USER: arcade_admin
+      POSTGRES_USER: ${POSTGRES_USER:-arcade_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arcade_dev_only}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
@@ -18,6 +18,40 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: standup-platform-api:local
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/arcade
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-arcade_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-arcade_dev_only}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: standup-platform-frontend:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:
