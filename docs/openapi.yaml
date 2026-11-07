@@ -21,14 +21,23 @@ servers:
     description: API locale o ambiente applicativo
 tags:
   - name: Sistema
+    description: Stato e diagnostica del servizio.
   - name: Pubblico
+    description: Consultazione e richieste dal portale pubblico.
   - name: Autenticazione
+    description: Accesso, inviti e gestione della sessione.
   - name: Commerciale
+    description: Richieste, pratiche, offerte e dati commerciali.
   - name: Operativita
+    description: Accessi, scansioni e acquisizione dei conteggi.
   - name: Espositore
+    description: Profilo e dati riservati all'organizzazione autenticata.
   - name: KPI
+    description: Indicatori già calcolati e restituiti ai client.
   - name: Integrazione BID-BAD
+    description: Esportazione fatti BID e ricezione dei lotti KPI BAD.
   - name: Amministrazione
+    description: Configurazione delle edizioni e gestione degli avvisi.
 security: []
 paths:
   /health:
@@ -451,7 +460,7 @@ paths:
                 type: object
                 required: [message]
                 properties:
-                  message: { type: string, example: Se l'account esiste, riceverai un link. }
+                  message: { type: string, example: "Se l'account esiste, riceverai un link." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/ServerError' }
 
@@ -1967,7 +1976,7 @@ components:
       type: object
       required: [ticketRef, edizione, categoria, canale, quantita, importoEur, registratoIl]
       properties:
-        ticketRef: { type: string, description: Token pseudonimizzato stabile per l'edizione, non il QR originale. }
+        ticketRef: { type: string, description: "Token pseudonimizzato stabile per l'edizione, non il QR originale." }
         ordineRef: { type: string, description: Token pseudonimizzato dell'ordine. }
         edizione: { type: integer }
         categoria: { type: string }
@@ -2006,7 +2015,7 @@ components:
       required: [edizione, espositoreRef, codiceStand, superficieMq, imponibileEur]
       properties:
         edizione: { type: integer }
-        espositoreRef: { type: string, description: Identificativo interno senza ragione sociale, email o partita IVA. }
+        espositoreRef: { type: string, description: "Identificativo interno senza ragione sociale, email o partita IVA." }
         codiceStand: { type: string }
         pacchetto: { $ref: '#/components/schemas/Pacchetto' }
         superficieMq: { type: number, minimum: 0 }
