@@ -1,0 +1,2021 @@
+openapi: 3.0.3
+info:
+  title: ARCADE Milano API
+  version: 0.1.0
+  description: |
+    Bozza del contratto REST per l'MVP ARCADE Milano 2026. Il backend Java/Spring Boot
+    gestito da BID è il punto d'ingresso per React, Power Apps, scansione e simulatori.
+
+    Scambio BID-BAD proposto:
+    - BID espone a BAD fatti sorgente senza email, codici QR in chiaro o anagrafiche personali.
+    - BAD calcola e pubblica gli indicatori con PUT /integrazioni/bad/kpi/{batchId}.
+    - BID valida e conserva il risultato; i client leggono gli indicatori da GET /kpi/....
+
+    Le route /bi/dati e /integrazioni/bad sono la proposta di integrazione da concordare
+    con BAD. Nessuna API o implementazione Spring Boot è ancora presente nel repository.
+    Le viste SQL V003 e V007 contengono calcoli già abbozzati: prima di usarle come KPI
+    ufficiali, BID e BAD devono confermare formula, proprietario e versione per evitare
+    di calcolare lo stesso indicatore in due punti.
+servers:
+  - url: /api/v1
+    description: API locale o ambiente applicativo
+tags:
+  - name: Pubblico
+  - name: Autenticazione
+  - name: Commerciale
+  - name: Operativita
+  - name: Espositore
+  - name: KPI
+  - name: Integrazione BID-BAD
+  - name: Amministrazione
+security: []
+paths:
+  /edizioni:
+    get:
+      tags: [Pubblico]
+      summary: Elenca le edizioni disponibili
+      operationId: listEdizioni
+      parameters:
+        - name: attiva
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Edizioni trovate
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Edizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /padiglioni:
+    get:
+      tags: [Pubblico]
+      summary: Elenca padiglioni e capienze per edizione
+      operationId: listPadiglioni
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Padiglioni e varchi
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Padiglione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /stand:
+    get:
+      tags: [Pubblico, Commerciale]
+      summary: Elenca stand, disponibilità e dati della planimetria
+      operationId: listStand
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: padiglione
+          in: query
+          schema: { type: string }
+        - name: stato
+          in: query
+          schema: { type: string, enum: [LIBERO, ASSEGNATO, NON_DISPONIBILE] }
+      responses:
+        '200':
+          description: Stand filtrati in base al ruolo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Stand' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /mappa:
+    get:
+      tags: [Pubblico]
+      summary: Restituisce stand, varchi e indicatori aggregati per la mappa
+      operationId: getMappa
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: includiAffollamento
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Dati cartografici senza percorsi personali
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Mappa' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori:
+    get:
+      tags: [Pubblico]
+      summary: Cerca e filtra espositori visibili nel portale
+      operationId: listEspositori
+      parameters:
+        - name: q
+          in: query
+          description: Ricerca per ragione sociale o nome pubblico
+          schema: { type: string, maxLength: 120 }
+        - name: categoria
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Pagina di espositori
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EspositorePage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/categorie:
+    get:
+      tags: [Pubblico]
+      summary: Elenca categorie pubbliche e conteggi degli espositori
+      operationId: listCategorieEspositori
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Categorie con conteggi aggiornati
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CategoriaEspositore' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/{id}:
+    get:
+      tags: [Pubblico]
+      summary: Restituisce la scheda pubblica di un espositore
+      operationId: getEspositorePubblico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Scheda pubblica
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EspositorePubblico' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/me:
+    get:
+      tags: [Espositore]
+      summary: Restituisce il profilo collegato all'account espositore
+      operationId: getMioEspositore
+      security:
+        - exhibitorJwt: []
+      responses:
+        '200':
+          description: Profilo dell'organizzazione autenticata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfiloEspositore' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/me/contratto:
+    get:
+      tags: [Espositore]
+      summary: Restituisce contratto, stato pratica e documenti dell'espositore
+      operationId: getMioContratto
+      security:
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Contratto dell'organizzazione autenticata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContrattoEspositore' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/me/contatti:
+    get:
+      tags: [Espositore]
+      summary: Elenca i contatti autorizzati dei soli stand dell'espositore
+      operationId: listMieiContatti
+      security:
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Contatti visibili in base a consenso e regole MQL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContattoPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /espositori/me/presenze-peso:
+    get:
+      tags: [Espositore, KPI]
+      summary: Restituisce la stima delle presenze dal peso per gli espositori PREMIUM
+      operationId: getMiePresenzePeso
+      security:
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: dal
+          in: query
+          schema: { type: string, format: date-time }
+        - name: al
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Stime con fonte, letture e margine dichiarato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeriePresenzePeso' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Account non PREMIUM o non autorizzato allo stand
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /richieste/espositore:
+    post:
+      tags: [Pubblico]
+      summary: Invia una richiesta di stand e crea una pratica in BOZZA
+      operationId: createRichiestaEspositore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RichiestaEspositore' }
+      responses:
+        '201':
+          description: Richiesta registrata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RichiestaAccettata' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /richieste/visitatore:
+    post:
+      tags: [Pubblico]
+      summary: Registra una richiesta di aggiornamenti per il visitatore
+      operationId: createRichiestaVisitatore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RichiestaVisitatore' }
+      responses:
+        '201':
+          description: Richiesta registrata anche senza consenso marketing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RichiestaAccettata' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /visitatori/registrazioni:
+    post:
+      tags: [Pubblico]
+      summary: Registra i dati minimi e i consensi separati del visitatore
+      operationId: createRegistrazioneVisitatore
+      description: La registrazione non vende né emette il biglietto. La profilazione richiede fascia adulta e consenso marketing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistrazioneVisitatore' }
+      responses:
+        '201':
+          description: Registrazione creata; il biglietto resta a carico della biglietteria esterna
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RegistrazioneCreata' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /visitatori/registrazioni/{id}/consensi:
+    patch:
+      tags: [Autenticazione]
+      summary: Revoca o aggiorna i consensi del visitatore
+      operationId: updateConsensiVisitatore
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AggiornamentoConsensi' }
+      responses:
+        '200':
+          description: Consensi aggiornati
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consensi' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /auth/login:
+    post:
+      tags: [Autenticazione]
+      summary: Autentica un account espositore
+      operationId: loginEspositore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Token JWT a scadenza breve
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429':
+          description: Troppi tentativi di accesso
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /auth/invito/accetta:
+    post:
+      tags: [Autenticazione]
+      summary: Accetta un invito monouso e imposta la password dell'espositore
+      operationId: acceptInvitoEspositore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccettazioneInvito' }
+      responses:
+        '200':
+          description: Account attivato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /auth/password/recupero:
+    post:
+      tags: [Autenticazione]
+      summary: Richiede il recupero password senza rivelare se l'email esiste
+      operationId: requestPasswordRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '202':
+          description: Richiesta presa in carico con messaggio generico
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string, example: Se l'account esiste, riceverai un link. }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /richieste:
+    get:
+      tags: [Commerciale]
+      summary: Elenca le richieste in attesa di gestione
+      operationId: listRichiesteCommerciali
+      security:
+        - internalBearer: []
+      parameters:
+        - name: stato
+          in: query
+          schema: { type: string, enum: [NUOVA, IN_LAVORAZIONE, CHIUSA] }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Richieste accessibili al commerciale
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RichiestaPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche:
+    get:
+      tags: [Commerciale]
+      summary: Cerca pratiche commerciali
+      operationId: listPratiche
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: stato
+          in: query
+          schema: { $ref: '#/components/schemas/StatoPratica' }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Pratiche nel perimetro del ruolo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PraticaPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Commerciale]
+      summary: Crea una pratica in BOZZA
+      operationId: createPratica
+      security:
+        - internalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuovaPratica' }
+      responses:
+        '201':
+          description: Pratica creata con prezzo calcolato dal listino
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pratica' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}:
+    get:
+      tags: [Commerciale]
+      summary: Restituisce una pratica
+      operationId: getPratica
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      responses:
+        '200':
+          description: Dettaglio pratica
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pratica' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    patch:
+      tags: [Commerciale]
+      summary: Aggiorna campi modificabili di una pratica ancora in BOZZA
+      operationId: updatePratica
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/AggiornamentoPratica' }
+      responses:
+        '200':
+          description: Pratica aggiornata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pratica' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/stato:
+    patch:
+      tags: [Commerciale]
+      summary: Avanza una pratica nello stato successivo
+      operationId: updateStatoPratica
+      description: "Transizioni valide in ordine: BOZZA, INVIATA, FIRMATA, ACCONTO_RICEVUTO. L'assegnazione dello stand alla firma è atomica."
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stato]
+              properties:
+                stato: { $ref: '#/components/schemas/StatoPratica' }
+                nota: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Stato aggiornato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pratica' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/offerta:
+    post:
+      tags: [Commerciale]
+      summary: Genera l'offerta e avvia il flusso di approvazione dello sconto
+      operationId: generateOfferta
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scontoPercentuale]
+              properties:
+                scontoPercentuale: { type: number, minimum: 0, maximum: 100 }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '201':
+          description: Offerta generata o inviata per approvazione se lo sconto supera la soglia
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentoPratica' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/documenti:
+    get:
+      tags: [Commerciale, Espositore]
+      summary: Elenca i documenti della pratica
+      operationId: listDocumentiPratica
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      responses:
+        '200':
+          description: Metadati e link autorizzati ai documenti SharePoint
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/DocumentoPratica' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/acconti:
+    post:
+      tags: [Commerciale]
+      summary: Registra un acconto ricevuto senza incassare pagamenti online
+      operationId: addAcconto
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [importoEur, ricevutoIl]
+              properties:
+                importoEur: { type: number, minimum: 0.01 }
+                ricevutoIl: { type: string, format: date-time }
+                riferimento: { type: string, maxLength: 100 }
+      responses:
+        '201':
+          description: Acconto registrato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acconto' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/rinnovo:
+    post:
+      tags: [Commerciale]
+      summary: Crea una proposta di rinnovo dall'edizione precedente
+      operationId: createRinnovo
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+      responses:
+        '201':
+          description: Pratica di rinnovo creata con stand e servizi precompilati
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pratica' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /accessi:
+    post:
+      tags: [Operativita]
+      summary: Registra una lettura al varco e restituisce l'esito
+      operationId: createAccesso
+      security:
+        - deviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuovoAccesso' }
+      responses:
+        '201':
+          description: Lettura registrata; un biglietto rifiutato è comunque un evento valido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EsitoAccesso' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /scansioni:
+    post:
+      tags: [Operativita]
+      summary: Registra una scansione allo stand senza mostrare dati del visitatore
+      operationId: createScansione
+      security:
+        - internalBearer: []
+        - deviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuovaScansione' }
+      responses:
+        '201':
+          description: Scansione registrata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EsitoScansione' }
+        '200':
+          description: Scansione duplicata riconosciuta e non conteggiata una seconda volta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EsitoScansione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pedane/conteggi:
+    post:
+      tags: [Operativita]
+      summary: Riceve il conteggio al minuto di entrate e uscite di una pedana
+      operationId: createConteggioPedana
+      security:
+        - deviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConteggioPedana' }
+      responses:
+        '201':
+          description: Conteggio acquisito, inclusi i minuti con conteggio zero
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /sensori-ai/conteggi:
+    post:
+      tags: [Operativita]
+      summary: Riceve il conteggio al minuto del sensore AI senza immagini o identificativi
+      operationId: createConteggioSensoreAi
+      security:
+        - deviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConteggioSensoreAi' }
+      responses:
+        '201':
+          description: Conteggio acquisito
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /rilevazioni/peso:
+    post:
+      tags: [Operativita]
+      summary: Riceve una lettura del peso simulata o da sensore
+      operationId: createRilevazionePeso
+      security:
+        - deviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RilevazionePeso' }
+      responses:
+        '201':
+          description: Lettura acquisita
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /lead-magnet:
+    get:
+      tags: [Pubblico]
+      summary: Elenca i lead magnet attivi per edizione e stand
+      operationId: listLeadMagnet
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: stand
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lead magnet pubblicabili
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/LeadMagnet' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Commerciale]
+      summary: Crea un lead magnet per ARCADE Milano o per un espositore
+      operationId: createLeadMagnet
+      security:
+        - internalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuovoLeadMagnet' }
+      responses:
+        '201':
+          description: Lead magnet creato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LeadMagnet' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /kpi/direzione:
+    get:
+      tags: [KPI]
+      summary: Restituisce il cruscotto direzionale calcolato da BAD
+      operationId: getKpiDirezione
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: dal
+          in: query
+          schema: { type: string, format: date }
+        - name: al
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Indicatori con formula, fonte, aggiornamento e qualità
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KpiResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /kpi/affluenza:
+    get:
+      tags: [KPI, Operativita]
+      summary: Restituisce andamento degli accessi, presenze e saturazione
+      operationId: getKpiAffluenza
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - name: padiglione
+          in: query
+          schema: { type: string }
+        - name: dal
+          in: query
+          schema: { type: string, format: date-time }
+        - name: al
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Serie temporale aggregate per padiglione e varco
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KpiResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /kpi/stand/{codice}:
+    get:
+      tags: [KPI]
+      summary: Restituisce visite, contatti e conversione di uno stand
+      operationId: getKpiStand
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+      parameters:
+        - name: codice
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: KPI dello stand; l'espositore vede solo il proprio stand
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KpiResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /kpi/espositori/{id}:
+    get:
+      tags: [KPI, Espositore]
+      summary: Restituisce i KPI di un espositore
+      operationId: getKpiEspositore
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Un espositore autenticato può leggere solo il proprio riepilogo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KpiResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /kpi/lead-magnet:
+    get:
+      tags: [KPI]
+      summary: Restituisce la resa aggregata dei lead magnet
+      operationId: getKpiLeadMagnet
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: MQL per lead magnet, senza righe personali
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KpiResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /avvisi:
+    get:
+      tags: [Pubblico]
+      summary: Elenca avvisi pubblici o visibili al ruolo autenticato
+      operationId: listAvvisi
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+        - {}
+      parameters:
+        - name: pubblico
+          in: query
+          schema: { type: string, enum: [VISITATORI, ESPOSITORI, STAFF] }
+      responses:
+        '200':
+          description: Solo avvisi compatibili con ruolo e pubblico richiesto
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Avviso' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    post:
+      tags: [Amministrazione]
+      summary: Crea un avviso di servizio
+      operationId: createAvviso
+      security:
+        - internalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuovoAvviso' }
+      responses:
+        '201':
+          description: Avviso creato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Avviso' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /avvisi/{id}:
+    patch:
+      tags: [Amministrazione]
+      summary: Modifica o disattiva un avviso
+      operationId: updateAvviso
+      security:
+        - internalBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/AggiornamentoAvviso' }
+      responses:
+        '200':
+          description: Avviso aggiornato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Avviso' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /admin/edizioni/{anno}:
+    put:
+      tags: [Amministrazione]
+      summary: Crea o aggiorna date, sede e stato di un'edizione
+      operationId: putEdizione
+      security:
+        - internalBearer: []
+      parameters:
+        - name: anno
+          in: path
+          required: true
+          schema: { type: integer, minimum: 2024 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Edizione' }
+      responses:
+        '200':
+          description: Edizione aggiornata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Edizione' }
+        '201':
+          description: Edizione creata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Edizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /admin/edizioni/{anno}/parametri:
+    patch:
+      tags: [Amministrazione]
+      summary: Aggiorna parametri di stima e soglie per l'edizione
+      operationId: updateParametriEdizione
+      security:
+        - internalBearer: []
+      parameters:
+        - name: anno
+          in: path
+          required: true
+          schema: { type: integer, minimum: 2024 }
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/ParametriEdizione' }
+      responses:
+        '200':
+          description: Parametri aggiornati
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParametriEdizione' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /bi/dati/vendite:
+    get:
+      tags: [Integrazione BID-BAD]
+      summary: Esporta a BAD i fatti di biglietteria necessari ai KPI
+      operationId: exportVenditePerBad
+      description: Restituisce record pseudonimizzati e dati di vendita; non restituisce nome, email o QR in chiaro.
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Fatti di vendita paginati
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FactPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FattoVendita' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /bi/dati/accessi:
+    get:
+      tags: [Integrazione BID-BAD]
+      summary: Esporta a BAD i fatti pseudonimizzati degli accessi
+      operationId: exportAccessiPerBad
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Fatti di accesso paginati, con ticket_ref non reversibile via API
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FactPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FattoAccesso' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /bi/dati/stand:
+    get:
+      tags: [Integrazione BID-BAD]
+      summary: Esporta a BAD visite e conteggi aggregati per stand e ora
+      operationId: exportFattiStandPerBad
+      description: Non espone record individuali dei visitatori né email.
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Conteggi aggregati per stand e fascia oraria
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FactPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FattoStand' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /bi/dati/commerciale:
+    get:
+      tags: [Integrazione BID-BAD]
+      summary: Esporta a BAD importi e superfici utili ai KPI commerciali
+      operationId: exportDatiCommercialiPerBad
+      description: Non include ragione sociale, email referente o partita IVA. I dati 2026 non vanno presentati come risultati storici 2024-2025.
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Fatti commerciali paginati
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FactPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FattoCommerciale' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /bi/dati/qualita:
+    get:
+      tags: [Integrazione BID-BAD]
+      summary: Esporta conteggi di anomalie e qualità per fonte
+      operationId: exportQualitaPerBad
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Conteggi aggregati dei flag senza righe originali
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/FattoQualita' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /integrazioni/bad/kpi/{batchId}:
+    put:
+      tags: [Integrazione BID-BAD]
+      summary: Riceve da BAD un lotto idempotente di KPI calcolati
+      operationId: putKpiBad
+      description: BID valida dimensioni e metadati, conserva il lotto e rende i valori disponibili alle route GET /kpi/.... Nessun dato personale deve essere inviato.
+      security:
+        - badIntegrationBearer: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          description: UUID stabile per rendere ripetibile l'invio dello stesso lotto
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LottoKpi' }
+      responses:
+        '200':
+          description: Lotto già ricevuto, nessuna duplicazione
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfermaLottoKpi' }
+        '201':
+          description: Lotto validato e salvato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfermaLottoKpi' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+components:
+  securitySchemes:
+    exhibitorJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token breve emesso all'espositore dopo invito e login; contiene l'organizzazione collegata.
+    internalBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token dell'account aziendale per Direzione, Commerciale, Staff e Amministratore. Issuer Entra ID o simulatore di demo da confermare.
+    deviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Credenziale di servizio limitata al tipo e all'ambito del dispositivo/simulatore.
+    badIntegrationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Credenziale di servizio BAD, limitata alle route /bi/dati e /integrazioni/bad/kpi.
+  parameters:
+    Edizione:
+      name: edizione
+      in: query
+      required: true
+      schema: { type: integer, minimum: 2024 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    IdPratica:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    BadRequest:
+      description: Payload o filtro non valido
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Autenticazione assente o non valida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Ruolo o ambito non autorizzato; include espositore BASE per la stima dal peso
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Risorsa non trovata o non visibile al chiamante
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conflitto di stato, duplicato o stand già assegnato
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ServerError:
+      description: Errore inatteso; la risposta non include dettagli interni o segreti
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [status, code, title, requestId]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer, enum: [400, 401, 403, 404, 409, 429, 500] }
+        code: { type: string }
+        detail: { type: string }
+        requestId: { type: string, format: uuid }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code: { type: string }
+              message: { type: string }
+    Edizione:
+      type: object
+      required: [anno, inizioFiera, fineFiera, stato]
+      properties:
+        anno: { type: integer, minimum: 2024 }
+        sede: { type: string, nullable: true }
+        inizioVendite: { type: string, format: date, nullable: true }
+        inizioFiera: { type: string, format: date }
+        fineFiera: { type: string, format: date }
+        stato: { type: string, enum: [PIANIFICATA, ATTIVA, CONCLUSA] }
+    Padiglione:
+      type: object
+      required: [codice, capienza, superficieMq, varchi]
+      properties:
+        codice: { type: string }
+        nome: { type: string }
+        capienza: { type: integer, minimum: 1 }
+        superficieMq: { type: number, minimum: 0 }
+        varchi:
+          type: array
+          items: { type: string }
+    Stand:
+      type: object
+      required: [codice, padiglione, superficieMq, stato]
+      properties:
+        codice: { type: string }
+        padiglione: { type: string }
+        superficieMq: { type: number, minimum: 0 }
+        fila: { type: integer, minimum: 1, nullable: true }
+        colonna: { type: integer, minimum: 1, nullable: true }
+        stato: { type: string, enum: [LIBERO, ASSEGNATO, NON_DISPONIBILE] }
+        prezzoListinoEur: { type: number, minimum: 0, nullable: true }
+        posizioneMappa: { type: string, nullable: true }
+    Mappa:
+      type: object
+      required: [edizione, padiglioni]
+      properties:
+        edizione: { type: integer }
+        padiglioni:
+          type: array
+          items:
+            type: object
+            required: [padiglione, stands, varchi]
+            properties:
+              padiglione: { $ref: '#/components/schemas/Padiglione' }
+              stands:
+                type: array
+                items: { $ref: '#/components/schemas/Stand' }
+              varchi:
+                type: array
+                items: { type: string }
+        affollamento:
+          type: array
+          items: { $ref: '#/components/schemas/KpiObservation' }
+    EspositorePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EspositorePubblico' }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    EspositorePubblico:
+      type: object
+      required: [id, nomePubblico, categorie]
+      properties:
+        id: { type: string }
+        nomePubblico: { type: string }
+        descrizione: { type: string, nullable: true }
+        logoUrl: { type: string, format: uri, nullable: true }
+        categorie:
+          type: array
+          items: { type: string }
+        stand: { $ref: '#/components/schemas/Stand' }
+        sitoWeb: { type: string, format: uri, nullable: true }
+        inEvidenza: { type: boolean, default: false }
+    ProfiloEspositore:
+      type: object
+      required: [id, ragioneSociale, edizione]
+      properties:
+        id: { type: string }
+        ragioneSociale: { type: string }
+        edizione: { type: integer }
+        stand: { $ref: '#/components/schemas/Stand' }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+    CategoriaEspositore:
+      type: object
+      required: [codice, nome, conteggio]
+      properties:
+        codice: { type: string }
+        nome: { type: string }
+        conteggio: { type: integer, minimum: 0 }
+    PageInfo:
+      type: object
+      required: [limit]
+      properties:
+        limit: { type: integer }
+        nextCursor: { type: string, nullable: true }
+    RichiestaEspositore:
+      type: object
+      required: [azienda, referente, email, categoria, metriQuadriDesiderati, consensoPrivacy]
+      properties:
+        azienda: { type: string, minLength: 1, maxLength: 200 }
+        referente: { type: string, minLength: 1, maxLength: 160 }
+        email: { type: string, format: email }
+        categoria: { type: string }
+        metriQuadriDesiderati: { type: number, minimum: 0.01 }
+        note: { type: string, maxLength: 2000 }
+        consensoPrivacy: { type: boolean, enum: [true] }
+    RichiestaVisitatore:
+      type: object
+      required: [email]
+      properties:
+        nome: { type: string, maxLength: 160 }
+        email: { type: string, format: email }
+        consensoMarketing: { type: boolean, default: false }
+    RichiestaAccettata:
+      type: object
+      required: [id, stato, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        stato: { type: string, enum: [NUOVA, BOZZA] }
+        createdAt: { type: string, format: date-time }
+    RegistrazioneVisitatore:
+      type: object
+      required: [email, consensoMarketing, consensoEspositori]
+      properties:
+        nome: { type: string, maxLength: 160 }
+        email: { type: string, format: email }
+        provincia: { type: string, maxLength: 80 }
+        fasciaEta:
+          type: string
+          enum: [18-24, 25-34, 35-44, 45+, NON_DICHIARATO]
+          default: NON_DICHIARATO
+        interessi:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE]
+        consensoMarketing: { type: boolean, default: false }
+        consensoEspositori: { type: boolean, default: false }
+    RegistrazioneCreata:
+      type: object
+      required: [id, profilabile, consensiAggiornatiIl]
+      properties:
+        id: { type: string, format: uuid }
+        profilabile: { type: boolean, description: False se manca consenso marketing o fascia adulta. }
+        consensiAggiornatiIl: { type: string, format: date-time }
+        tokenRevoca: { type: string, description: Token monouso/rotante per modificare i consensi; non è un token di accesso. }
+    AggiornamentoConsensi:
+      type: object
+      required: [tokenRevoca]
+      properties:
+        tokenRevoca: { type: string }
+        consensoMarketing: { type: boolean }
+        consensoEspositori: { type: boolean }
+    Consensi:
+      type: object
+      required: [consensoMarketing, consensoEspositori, aggiornatiIl, profilabile]
+      properties:
+        consensoMarketing: { type: boolean }
+        consensoEspositori: { type: boolean }
+        aggiornatiIl: { type: string, format: date-time }
+        profilabile: { type: boolean }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 12 }
+    AccettazioneInvito:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string }
+        password: { type: string, format: password, minLength: 12 }
+    TokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        expiresIn: { type: integer, minimum: 1 }
+    RichiestaPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, tipo, stato, createdAt]
+            properties:
+              id: { type: string, format: uuid }
+              tipo: { type: string, enum: [ESPOSITORE, VISITATORE] }
+              stato: { type: string, enum: [NUOVA, IN_LAVORAZIONE, CHIUSA] }
+              createdAt: { type: string, format: date-time }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    StatoPratica:
+      type: string
+      enum: [BOZZA, INVIATA, FIRMATA, ACCONTO_RICEVUTO]
+    Pacchetto:
+      type: string
+      enum: [BASE, PREMIUM]
+    NuovaPratica:
+      type: object
+      required: [edizione, idEspositore, codiceStand, pacchetto]
+      properties:
+        edizione: { type: integer }
+        idEspositore: { type: string }
+        codiceStand: { type: string }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+        voci:
+          type: array
+          items:
+            type: object
+            required: [codiceVoce, quantita]
+            properties:
+              codiceVoce: { type: string }
+              quantita: { type: number, minimum: 0.001 }
+        scontoPercentuale: { type: number, minimum: 0, maximum: 100, default: 0 }
+    AggiornamentoPratica:
+      type: object
+      properties:
+        codiceStand: { type: string }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+        scontoPercentuale: { type: number, minimum: 0, maximum: 100 }
+        voci:
+          type: array
+          items:
+            type: object
+            required: [codiceVoce, quantita]
+            properties:
+              codiceVoce: { type: string }
+              quantita: { type: number, minimum: 0.001 }
+    Pratica:
+      type: object
+      required: [id, edizione, idEspositore, stato, pacchetto, totaleEur, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        edizione: { type: integer }
+        idEspositore: { type: string }
+        codiceStand: { type: string, nullable: true }
+        stato: { $ref: '#/components/schemas/StatoPratica' }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+        totaleEur: { type: number, minimum: 0 }
+        scontoPercentuale: { type: number, minimum: 0, maximum: 100 }
+        approvazioneRichiesta: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PraticaPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Pratica' }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    DocumentoPratica:
+      type: object
+      required: [id, tipo, nome, url, creatoIl]
+      properties:
+        id: { type: string, format: uuid }
+        tipo: { type: string, enum: [OFFERTA, CONTRATTO, ALTRO] }
+        nome: { type: string }
+        url: { type: string, format: uri, description: Link temporaneo autorizzato a SharePoint. }
+        creatoIl: { type: string, format: date-time }
+    Acconto:
+      type: object
+      required: [id, importoEur, ricevutoIl]
+      properties:
+        id: { type: string, format: uuid }
+        importoEur: { type: number, minimum: 0 }
+        ricevutoIl: { type: string, format: date-time }
+        riferimento: { type: string, nullable: true }
+    ContrattoEspositore:
+      type: object
+      required: [edizione, stato, pacchetto]
+      properties:
+        edizione: { type: integer }
+        stato: { $ref: '#/components/schemas/StatoPratica' }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+        codiceStand: { type: string, nullable: true }
+        totaleEur: { type: number, nullable: true }
+        acconti:
+          type: array
+          items: { $ref: '#/components/schemas/Acconto' }
+        documenti:
+          type: array
+          items: { $ref: '#/components/schemas/DocumentoPratica' }
+    ContattoPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, raccoltoIl, consensoMarketing, utilizzabileMarketing]
+            properties:
+              id: { type: string }
+              raccoltoIl: { type: string, format: date-time }
+              codiceStand: { type: string }
+              email: { type: string, format: email, description: Restituita solo se il consenso e l'ambito espositore lo consentono. }
+              interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
+              consensoMarketing: { type: string, enum: [SI, NO, NON_DICHIARATO] }
+              utilizzabileMarketing: { type: boolean }
+              mql: { type: boolean }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    NuovoAccesso:
+      type: object
+      required: [eventId, edizione, varco, lettoIl, codiceBiglietto]
+      properties:
+        eventId: { type: string, maxLength: 100 }
+        edizione: { type: integer }
+        varco: { type: string }
+        lettoIl: { type: string, format: date-time }
+        codiceBiglietto: { type: string, writeOnly: true, description: Il QR è usato solo per la validazione e non viene restituito nei fatti esposti a BAD. }
+    EsitoAccesso:
+      type: object
+      required: [eventId, esito, persone, lettoIl]
+      properties:
+        eventId: { type: string }
+        esito: { type: string, enum: [INGRESSO, INGRESSO_RIFIUTATO] }
+        motivoRifiuto: { type: string, enum: [BIGLIETTO_NON_VALIDO, GIA_USATO, GIORNO_NON_VALIDO], nullable: true }
+        persone: { type: integer, minimum: 0 }
+        lettoIl: { type: string, format: date-time }
+    NuovaScansione:
+      type: object
+      required: [eventId, edizione, codiceStand, operatoreId, rilevataIl]
+      properties:
+        eventId: { type: string, maxLength: 100 }
+        edizione: { type: integer }
+        codiceStand: { type: string }
+        operatoreId: { type: string }
+        rilevataIl: { type: string, format: date-time }
+        ticketRef: { type: string, description: Identificativo pseudonimizzato; non contiene nome o email. }
+        idLeadMagnet: { type: integer, format: int64, nullable: true }
+        consensoEspositori: { type: boolean, default: false }
+        email: { type: string, format: email, writeOnly: true, description: Facoltativa; conservata solo nel registro riservato se il consenso la autorizza. }
+    EsitoScansione:
+      type: object
+      required: [eventId, accettata, duplicata, conteggioStand]
+      properties:
+        eventId: { type: string }
+        accettata: { type: boolean }
+        duplicata: { type: boolean }
+        conteggioStand: { type: integer, minimum: 0 }
+        messaggio: { type: string }
+    ConteggioPedana:
+      type: object
+      required: [eventId, edizione, padiglione, minuto, entrati, usciti, fonte]
+      properties:
+        eventId: { type: string, maxLength: 100 }
+        edizione: { type: integer }
+        padiglione: { type: string }
+        minuto: { type: string, format: date-time, description: Deve essere allineato al minuto. }
+        entrati: { type: integer, minimum: 0 }
+        usciti: { type: integer, minimum: 0 }
+        fonte: { type: string, enum: [SIMULATA, SENSORE] }
+    ConteggioSensoreAi:
+      type: object
+      required: [eventId, edizione, codiceStand, minuto, nuovePersoneFermate, fonte]
+      properties:
+        eventId: { type: string, maxLength: 100 }
+        edizione: { type: integer }
+        codiceStand: { type: string }
+        minuto: { type: string, format: date-time }
+        nuovePersoneFermate: { type: integer, minimum: 0 }
+        fonte: { type: string, enum: [SIMULATA, SENSORE] }
+    RilevazionePeso:
+      type: object
+      required: [eventId, edizione, codiceStand, rilevatoIl, pesoLordoKg, taraKg, fonte]
+      properties:
+        eventId: { type: string, maxLength: 100 }
+        edizione: { type: integer }
+        codiceStand: { type: string }
+        rilevatoIl: { type: string, format: date-time }
+        pesoLordoKg: { type: number, minimum: 0 }
+        taraKg: { type: number, minimum: 0 }
+        fonte: { type: string, enum: [SIMULATA, SENSORE] }
+    Acquisizione:
+      type: object
+      required: [eventId, acquisita, fonte]
+      properties:
+        eventId: { type: string }
+        acquisita: { type: boolean }
+        fonte: { type: string, enum: [SIMULATA, SENSORE] }
+    LeadMagnet:
+      type: object
+      required: [id, edizione, tipo, titolo, interesse, attivo]
+      properties:
+        id: { type: integer, format: int64 }
+        edizione: { type: integer }
+        idEspositore: { type: string, nullable: true, description: Null per lead magnet ARCADE Milano. }
+        tipo: { type: string, enum: [ACCESSO_BETA, CODICE_SCONTO, CONTENUTO_ESCLUSIVO, TORNEO, ESTRAZIONE, DEMO_PRIVATA] }
+        titolo: { type: string }
+        interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
+        attivo: { type: boolean }
+    NuovoLeadMagnet:
+      type: object
+      required: [edizione, tipo, titolo, interesse]
+      properties:
+        edizione: { type: integer }
+        idEspositore: { type: string, nullable: true }
+        tipo: { type: string, enum: [ACCESSO_BETA, CODICE_SCONTO, CONTENUTO_ESCLUSIVO, TORNEO, ESTRAZIONE, DEMO_PRIVATA] }
+        titolo: { type: string, minLength: 1, maxLength: 200 }
+        interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
+        attivo: { type: boolean, default: true }
+    Avviso:
+      type: object
+      required: [id, titolo, testo, pubblico, pubblicatoIl, attivo]
+      properties:
+        id: { type: string, format: uuid }
+        titolo: { type: string }
+        testo: { type: string }
+        pubblico: { type: string, enum: [VISITATORI, ESPOSITORI, STAFF] }
+        pubblicatoIl: { type: string, format: date-time }
+        attivo: { type: boolean }
+    NuovoAvviso:
+      type: object
+      required: [titolo, testo, pubblico]
+      properties:
+        titolo: { type: string, minLength: 1, maxLength: 160 }
+        testo: { type: string, minLength: 1, maxLength: 4000 }
+        pubblico: { type: string, enum: [VISITATORI, ESPOSITORI, STAFF] }
+        pubblicatoIl: { type: string, format: date-time }
+        attivo: { type: boolean, default: true }
+    AggiornamentoAvviso:
+      type: object
+      properties:
+        titolo: { type: string, maxLength: 160 }
+        testo: { type: string, maxLength: 4000 }
+        pubblico: { type: string, enum: [VISITATORI, ESPOSITORI, STAFF] }
+        pubblicatoIl: { type: string, format: date-time }
+        attivo: { type: boolean }
+    ParametriEdizione:
+      type: object
+      properties:
+        orePermanenza: { type: number, minimum: 0.001 }
+        pesoMedioKg: { type: number, minimum: 0.001 }
+        sogliaRumoreKg: { type: number, minimum: 0 }
+        personePerMq: { type: number, minimum: 0.001 }
+        sogliaAvviso: { type: number, minimum: 0.000001, maximum: 1 }
+    KpiCode:
+      type: string
+      enum:
+        - visitatori_venduti
+        - ingressi_effettivi
+        - picco_presenza
+        - saturazione_pct
+        - visitatori_per_mq
+        - ricavo_per_mq
+        - costo_per_contatto
+        - visite_stand
+        - contatti_stand
+        - contatti_per_100_visite
+        - contatti_su_persone_ferme_pct
+        - mql
+        - interesse_pubblico
+        - resa_lead_magnet
+    KpiObservation:
+      type: object
+      required: [codice, valore, unita, edizione, calcolatoIl, formulaVersione, fonte, qualita, stimato, simulato]
+      properties:
+        codice: { $ref: '#/components/schemas/KpiCode' }
+        valore: { type: number }
+        unita: { type: string, example: persone }
+        edizione: { type: integer }
+        periodoDal: { type: string, format: date-time, nullable: true }
+        periodoAl: { type: string, format: date-time, nullable: true }
+        dimensioni:
+          type: object
+          additionalProperties: { type: string }
+          description: Filtri come padiglione, stand, categoria o canale; mai identificativi personali.
+        calcolatoIl: { type: string, format: date-time }
+        formulaVersione: { type: string, example: '1.0' }
+        fonte:
+          type: array
+          items: { type: string }
+        qualita: { type: string, enum: [OK, ATTENZIONE, DA_VERIFICARE] }
+        flagQualita:
+          type: array
+          items: { type: string }
+        stimato: { type: boolean }
+        simulato: { type: boolean }
+        nota: { type: string, nullable: true }
+    KpiResponse:
+      type: object
+      required: [edizione, items]
+      properties:
+        edizione: { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/KpiObservation' }
+    LottoKpi:
+      type: object
+      required: [edizione, calcolatoIl, formulaVersione, items]
+      properties:
+        edizione: { type: integer }
+        calcolatoIl: { type: string, format: date-time }
+        formulaVersione: { type: string, minLength: 1 }
+        intervalloDatiDal: { type: string, format: date-time, nullable: true }
+        intervalloDatiAl: { type: string, format: date-time, nullable: true }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/KpiObservation' }
+    ConfermaLottoKpi:
+      type: object
+      required: [batchId, stato, ricevutoIl, elementiAccettati]
+      properties:
+        batchId: { type: string, format: uuid }
+        stato: { type: string, enum: [ACCETTATO, GIA_RICEVUTO] }
+        ricevutoIl: { type: string, format: date-time }
+        elementiAccettati: { type: integer, minimum: 0 }
+        elementiRifiutati: { type: integer, minimum: 0 }
+    FactPage:
+      type: object
+      required: [edizione, items, page]
+      properties:
+        edizione: { type: integer }
+        items: { type: array, items: { type: object } }
+        page: { $ref: '#/components/schemas/PageInfo' }
+        estrattoIl: { type: string, format: date-time }
+    FattoVendita:
+      type: object
+      required: [ticketRef, edizione, categoria, canale, quantita, importoEur, registratoIl]
+      properties:
+        ticketRef: { type: string, description: Token pseudonimizzato stabile per l'edizione, non il QR originale. }
+        ordineRef: { type: string, description: Token pseudonimizzato dell'ordine. }
+        edizione: { type: integer }
+        categoria: { type: string }
+        canale: { type: string }
+        giornoValido: { type: string, format: date, nullable: true }
+        quantita: { type: integer, minimum: 1 }
+        importoEur: { type: number, minimum: 0 }
+        registratoIl: { type: string, format: date-time }
+        flagQualita: { type: array, items: { type: string } }
+    FattoAccesso:
+      type: object
+      required: [eventId, ticketRef, edizione, varco, lettoIl, esito, persone]
+      properties:
+        eventId: { type: string }
+        ticketRef: { type: string, description: Token pseudonimizzato che consente il join senza esporre il QR. }
+        edizione: { type: integer }
+        varco: { type: string }
+        lettoIl: { type: string, format: date-time }
+        esito: { type: string, enum: [INGRESSO, INGRESSO_RIFIUTATO] }
+        persone: { type: integer, minimum: 0 }
+        flagQualita: { type: array, items: { type: string } }
+    FattoStand:
+      type: object
+      required: [edizione, codiceStand, intervalloDal, visite, contatti]
+      properties:
+        edizione: { type: integer }
+        codiceStand: { type: string }
+        intervalloDal: { type: string, format: date-time }
+        visite: { type: integer, minimum: 0 }
+        contatti: { type: integer, minimum: 0 }
+        contattiConConsenso: { type: integer, minimum: 0 }
+        personeFermate: { type: integer, minimum: 0, nullable: true }
+        flagQualita: { type: array, items: { type: string } }
+    FattoCommerciale:
+      type: object
+      required: [edizione, espositoreRef, codiceStand, superficieMq, imponibileEur]
+      properties:
+        edizione: { type: integer }
+        espositoreRef: { type: string, description: Identificativo interno senza ragione sociale, email o partita IVA. }
+        codiceStand: { type: string }
+        pacchetto: { $ref: '#/components/schemas/Pacchetto' }
+        superficieMq: { type: number, minimum: 0 }
+        imponibileListinoEur: { type: number, minimum: 0 }
+        scontoPercentuale: { type: number, minimum: 0, maximum: 100 }
+        imponibileEur: { type: number, minimum: 0 }
+        accontoPagatoEur: { type: number, minimum: 0 }
+        saldoPagatoEur: { type: number, minimum: 0 }
+    FattoQualita:
+      type: object
+      required: [edizione, fonte, codice, conteggio]
+      properties:
+        edizione: { type: integer }
+        fonte: { type: string }
+        codice: { type: string }
+        conteggio: { type: integer, minimum: 0 }
+    SeriePresenzePeso:
+      type: object
+      required: [edizione, codiceStand, items, erroreAttesoPercentuale]
+      properties:
+        edizione: { type: integer }
+        codiceStand: { type: string }
+        erroreAttesoPercentuale: { type: number, minimum: 0 }
+        items:
+          type: array
+          items:
+            type: object
+            required: [minuto, presenzeStimate, letture]
+            properties:
+              minuto: { type: string, format: date-time }
+              presenzeStimate: { type: integer, minimum: 0 }
+              letture: { type: integer, minimum: 1 }
+              fonte: { type: string, enum: [SIMULATA, SENSORE] }
