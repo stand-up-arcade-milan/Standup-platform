@@ -12,5 +12,6 @@
 
 - Gestire ingresso valido, non valido, già usato, fuori giorno, rete non disponibile e dispositivo non autenticato.
 - Un evento rifiutato resta registrato come esito, non va confuso con un errore tecnico.
-- **Gap da risolvere:** OpenAPI autorizza `POST /accessi` con credenziale dispositivo, ma non definisce un endpoint o una UI staff per verificare/ricercare un biglietto, né specifica i motivi puntuali nel modello di risposta. Non implementare una ricerca o bypass client senza aggiornare il contratto.
+- `POST /accessi` restituisce i motivi `BIGLIETTO_NON_VALIDO`, `GIA_USATO` o `GIORNO_NON_VALIDO` nel campo `motivoRifiuto`.
+- Il contratto non definisce un endpoint o una UI staff per verificare/ricercare un biglietto; non implementare una ricerca o bypass client senza aggiornare il contratto.
 - L'emissione e vendita del biglietto restano alla biglietteria esterna; questo flusso verifica l'accesso.

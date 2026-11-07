@@ -116,7 +116,7 @@ Questi endpoint per il portale sono parte del contratto completo in [openapi.yam
 | `GET /espositori/categorie` | Categorie con i conteggi |
 | `POST /richieste/espositore`, `POST /richieste/visitatore` | Moduli della home |
 | `GET /avvisi?pubblico=` | Avvisi per pubblico |
-| `POST /auth/login`, `POST /auth/invito/accetta`, `POST /auth/password/recupero` | Accesso degli espositori |
+| `POST /auth/login`, `POST /auth/invito/accetta`, `POST /auth/password/recupero`, `POST /auth/password/reimposta` | Accesso e recupero password degli espositori |
 
 ## 9. Cosa non prendiamo
 

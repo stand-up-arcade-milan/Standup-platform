@@ -12,7 +12,8 @@ info:
     - BID valida e conserva il risultato; i client leggono gli indicatori da GET /kpi/....
 
     Le route /bi/dati e /integrazioni/bad sono la proposta di integrazione da concordare
-    con BAD. Nessuna API o implementazione Spring Boot è ancora presente nel repository.
+    con BAD. Spring Boot contiene soltanto il boilerplate e il controllo /health; le altre
+    operazioni descritte qui non sono ancora implementate.
     Le viste SQL V003 e V007 contengono calcoli già abbozzati: prima di usarle come KPI
     ufficiali, BID e BAD devono confermare formula, proprietario e versione per evitare
     di calcolare lo stesso indicatore in due punti.
@@ -162,9 +163,15 @@ paths:
           in: query
           description: Ricerca per ragione sociale o nome pubblico
           schema: { type: string, maxLength: 120 }
-        - name: categoria
+        - name: categorie
           in: query
-          schema: { type: string }
+          description: Una o più categorie; ripetere il parametro per applicare più filtri.
+          style: form
+          explode: true
+          schema:
+            type: array
+            uniqueItems: true
+            items: { type: string, minLength: 1 }
         - $ref: '#/components/parameters/Edizione'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -462,6 +469,24 @@ paths:
                 properties:
                   message: { type: string, example: "Se l'account esiste, riceverai un link." }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /auth/password/reimposta:
+    post:
+      tags: [Autenticazione]
+      summary: Imposta una nuova password usando il token monouso di recupero
+      operationId: resetPassword
+      description: Il token scaduto o già usato restituisce un conflitto; la risposta non rivela dati dell'account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReimpostazionePassword' }
+      responses:
+        '204':
+          description: Password aggiornata; l'utente torna alla schermata di accesso
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '500': { $ref: '#/components/responses/ServerError' }
 
   /richieste:
@@ -1623,6 +1648,12 @@ components:
       properties:
         token: { type: string }
         password: { type: string, format: password, minLength: 12 }
+    ReimpostazionePassword:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string, minLength: 1, writeOnly: true, description: Token monouso ricevuto nel link di recupero. }
+        password: { type: string, format: password, minLength: 12, description: Nuova password scelta dall'espositore. }
     TokenResponse:
       type: object
       required: [accessToken, tokenType, expiresIn]

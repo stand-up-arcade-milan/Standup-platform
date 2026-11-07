@@ -10,7 +10,7 @@
 
 ## Azioni e API
 
-- Cercare e filtrare con `GET /espositori?q=&categoria=&edizione=`.
+- Cercare e filtrare con `GET /espositori?q=&categorie=&edizione=`; ripetere `categorie` per selezioni multiple.
 - Caricare categorie e conteggi con `GET /espositori/categorie?edizione=`.
 - Aprire la scheda pubblica dell'espositore.
 
@@ -18,4 +18,4 @@
 
 - Mostrare risultati, nessun risultato, caricamento, errore e paginazione.
 - Esporre solo informazioni marcate pubbliche; i contatti dipendono dalla scelta di visibilità dell'espositore.
-- Il contratto attuale espone un filtro categoria singolo; filtri multipli e ordinamento per interesse richiedono conferma/aggiornamento del contratto.
+- Le categorie di interesse restano nel browser. L'API filtra per le categorie selezionate; l'ordinamento per interesse può essere applicato ai risultati senza inviare preferenze personali.
