@@ -83,7 +83,9 @@ La proposta coerente con il repository è:
 | --- | --- | --- |
 | Portale web | React | Cruscotto operativo, consultazione e portale espositore |
 | Linguaggio frontend | TypeScript | Tipi condivisi per richieste e risposte dell’API |
-| Runtime e strumenti frontend | Bun | Installazione dipendenze, script e build del frontend |
+| Routing frontend | TanStack Router | Navigazione tra schermate, route annidate e parametri tipizzati |
+| Pacchetti e script frontend | Bun | Installazione delle dipendenze e avvio degli script |
+| Server di sviluppo e build frontend | Vite | Server di sviluppo con aggiornamento rapido e generazione degli asset statici |
 | App operative | Power Apps | Back office commerciale e scansione allo stand, se la prova tecnica ne conferma l’idoneità |
 | API | Java, Spring Boot, REST | Regole, validazione, integrazione e autorizzazioni |
 | Descrizione API | OpenAPI e Swagger UI | Contratto leggibile e documentazione degli endpoint |

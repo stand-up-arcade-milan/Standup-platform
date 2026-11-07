@@ -203,7 +203,9 @@ Per avviare il solo database PostgreSQL in locale, esegui `docker compose up -d 
 | Backend | Java e Spring Boot | API REST, regole di business, validazione e autorizzazioni |
 | Descrizione API | OpenAPI e Swagger UI | Contratto leggibile e documentazione degli endpoint, consultabili e provabili |
 | Interfaccia web | React e TypeScript | Portale responsive per espositori, visitatori e operatività evento |
-| Runtime e strumenti frontend | Bun | Installazione dipendenze, script e build del frontend |
+| Routing frontend | TanStack Router | Navigazione tra schermate, route annidate e parametri tipizzati |
+| Pacchetti e script frontend | Bun | Installazione delle dipendenze e avvio degli script |
+| Server di sviluppo e build frontend | Vite | Server di sviluppo con aggiornamento rapido e generazione degli asset statici |
 | App operative | Power Apps | Back office commerciale e, se la prova tecnica lo conferma, scansione allo stand |
 | Automazioni | Power Automate | Generazione dell’offerta, approvazione delle sole eccezioni, archivio, notifiche e rinnovi |
 | Documenti | SharePoint | File, planimetrie, contratti firmati e materiali |
