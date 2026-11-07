@@ -6,7 +6,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Requisiti MVP](docs/requisiti-mvp.md) · [Modello ER](docs/modello-er.md)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Schede schermate](docs/schermate/README.md) · [CI/CD](docs/ci-cd.md) · [Requisiti MVP](docs/requisiti-mvp.md) · [Modello ER](docs/modello-er.md)
 
 </div>
 
@@ -544,6 +544,8 @@ Branch di lavoro:
 - [Requisiti e perimetro dell'MVP](docs/requisiti-mvp.md): utenti, ruoli, requisiti con criteri di accettazione, dati gestiti e confini dell'MVP.
 - [Modello ER](docs/modello-er.md): diagramma completo dello schema `arcade`, con le novità del SAL 1, i dati personali separati e le regole di visibilità.
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
+- [Schede delle schermate](docs/schermate/README.md): contenuti, azioni, ruoli, stati e API previsti per ciascuna schermata React, Power Apps e Power BI.
+- [CI/CD GitHub Actions](docs/ci-cd.md): controlli automatici su push/PR, smoke check Docker Compose e pubblicazione versionata delle immagini su GHCR.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
 - [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL.
