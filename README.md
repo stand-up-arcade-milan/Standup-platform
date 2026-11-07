@@ -195,6 +195,8 @@ sequenceDiagram
 <a id="stack"></a>
 ## Stack tecnologico
 
+Per avviare il solo database PostgreSQL in locale, esegui `docker compose up -d --build`: Compose usa `arcade_dev_only`, una password condivisa solo per lo sviluppo. `.env` è facoltativo e può sovrascriverla. Non usare questa password fuori dallo sviluppo locale; gli ambienti condivisi e di produzione devono fornire credenziali proprie. Il container carica `database/migrations/` solo quando inizializza un volume vuoto; le modifiche successive allo schema andranno gestite con migrazioni applicative.
+
 | Componente | Tecnologia | Responsabilità |
 | --- | --- | --- |
 | Database | PostgreSQL | Fonte condivisa per contratti, espositori, biglietti, accessi, scansioni e personale |

@@ -27,6 +27,14 @@ replay_pid*
 dati-storici/
 *.csv
 
+# Credenziali locali per Docker Compose
+.env
+.env.*
+!.env.example
+
+# Impostazioni locali dell'editor
+.vscode/
+
 # Bozze sorgente locali del blueprint, non versionate
 /docs/fonti/ARCADE_Milano_Blueprint_v2.pdf
 /docs/fonti/Standup-blueprint.md
