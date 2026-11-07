@@ -2,7 +2,7 @@
 
 Documento di lavoro del team **Stand up** per ARCADE Milano 2026. Chiude l'issue #1: fissa utenti, ruoli, flussi, dati e criteri di accettazione dell'MVP. Dove serviva una scelta, la scelta è già fatta e si cambia con un parametro.
 
-Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md) · [Dati storici](dati-storici.md) · [Portale web](frontend-portale.md)
+Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md) · [Dati storici](dati-storici.md) · [Portale web](frontend-portale.md) · [Contratto API](openapi.yaml)
 
 ## 1. Obiettivo dell'MVP
 

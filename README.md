@@ -100,6 +100,8 @@ Il database PostgreSQL conserva i dati condivisi e mantiene relazioni coerenti t
 
 L’API Java con Spring Boot centralizza le regole applicative e i controlli di autorizzazione. React e Power Apps offrono interfacce adatte ai diversi processi, senza collegarsi direttamente alle tabelle.
 
+**Database scelto: PostgreSQL, non MongoDB.** Espositori, stand, edizioni, pratiche, contratti, pagamenti, biglietti, accessi e contatti hanno relazioni e vincoli d’integrità che devono restare coerenti; servono inoltre policy per isolare i dati degli espositori. PostgreSQL offre chiavi esterne, vincoli unici e row-level security, e il repository contiene già migrazioni SQL per questi casi. MongoDB supporta relazioni e transazioni, ma il suo modello documentale flessibile non porta un vantaggio sufficiente a giustificare un secondo modello dati. Riferimenti: [vincoli PostgreSQL](https://www.postgresql.org/docs/current/ddl-constraints.html), [row-level security PostgreSQL](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), [modellazione MongoDB](https://www.mongodb.com/docs/manual/data-modeling/).
+
 SharePoint è adatto a documenti e collaborazione, mentre le transazioni e le relazioni principali restano in PostgreSQL. Power Automate gestisce preventivi, approvazioni, contratti, notifiche e rinnovi. Power BI presenta gli indicatori per ruolo e ambito.
 
 <a id="flusso-operativo"></a>
@@ -198,7 +200,8 @@ sequenceDiagram
 | Database | PostgreSQL | Fonte condivisa per contratti, espositori, biglietti, accessi, scansioni e personale |
 | Backend | Java e Spring Boot | API REST, regole di business, validazione e autorizzazioni |
 | Descrizione API | OpenAPI e Swagger UI | Contratto leggibile e documentazione degli endpoint, consultabili e provabili |
-| Interfaccia web | React | Portale responsive per espositori, visitatori e operatività evento |
+| Interfaccia web | React e TypeScript | Portale responsive per espositori, visitatori e operatività evento |
+| Runtime e strumenti frontend | Bun | Installazione dipendenze, script e build del frontend |
 | App operative | Power Apps | Back office commerciale e, se la prova tecnica lo conferma, scansione allo stand |
 | Automazioni | Power Automate | Generazione dell’offerta, approvazione delle sole eccezioni, archivio, notifiche e rinnovi |
 | Documenti | SharePoint | File, planimetrie, contratti firmati e materiali |
@@ -519,11 +522,15 @@ Branch di lavoro:
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
 - [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL.
+- [Contratto API OpenAPI](docs/openapi.yaml): richieste, risposte, schemi, sicurezza e scambio dati tra BID e BAD; bozza da allineare con entrambi i gruppi.
+- [Brief del laboratorio](docs/fonti/Progetto_Laboratorio_Integrato_BAD-BID_compilato.docx) e [Gantt](docs/fonti/Gantt-Stand-UP.pdf): consegna, responsabilità e milestone del progetto.
 
 <a id="identita-visiva"></a>
 ## Identità visiva
 
 La palette ufficiale di Stand up combina un fondo scuro con accenti luminosi e un colore secondario ispirato al palco e alla cultura arcade.
+
+Codici ed esportazioni: [palette colori](docs/palette-colori.md).
 
 | Colore | Codice | Uso nel progetto |
 | --- | --- | --- |

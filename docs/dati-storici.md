@@ -4,9 +4,23 @@ Documento di lavoro del team **Stand up**. Descrive i dati delle due edizioni pr
 
 Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md)
 
-I file originali non stanno nella repository: pesano oltre 30 MB e contengono dati di contatto di persone. Qui ci sono solo la descrizione, le regole e lo schema.
+Gli export originali disponibili sono stati copiati in locale in `dati-storici/originali/ARCADE_Milano_dati/`. La cartella è esclusa da Git: i file sono sintetici secondo il [brief del progetto](fonti/Progetto_Laboratorio_Integrato_BAD-BID_compilato.docx), ma includono campi come email, partita IVA e codici di biglietto. Non vanno inseriti nel repository o nei mockup.
 
-## 1. File ricevuti
+### Sorgenti originali disponibili in locale
+
+| File | Contenuto |
+| --- | --- |
+| `biglietteria_2024.csv`, `biglietteria_2025.csv` | Ordini e biglietti venduti |
+| `tornelli_2024.csv`, `tornelli_2025.csv` | Letture ai varchi |
+| `visite_stand_2025.csv` | Scansioni aggregate per stand e ora |
+| `contatti_stand_2025.csv` | Contatti, consenso e interesse; contiene email |
+| `ARCADE_Commerciale.xlsx` | Espositori, planimetria, listino 2026, contratti e righe di contratto; contiene email e partita IVA |
+
+L’archivio conteneva anche una copia ZIP annidata, un file temporaneo di Excel e metadati macOS; non sono stati copiati.
+
+## 1. File normalizzati richiesti dall'importazione
+
+Questi cinque file sono il dataset unificato e ripulito atteso dallo script; non sono presenti nell’archivio originale appena aggiunto. Gli export locali sopra sono le fonti da cui ricavare o riconciliare questi file.
 
 | File | Contenuto |
 | --- | --- |

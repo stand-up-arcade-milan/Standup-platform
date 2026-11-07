@@ -26,3 +26,7 @@ replay_pid*
 # Dati storici con dati personali
 dati-storici/
 *.csv
+
+# Bozze sorgente locali del blueprint, non versionate
+/docs/fonti/ARCADE_Milano_Blueprint_v2.pdf
+/docs/fonti/Standup-blueprint.md

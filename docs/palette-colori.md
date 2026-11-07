@@ -1,27 +1,56 @@
-Versione Code
+# Palette colori
 
-- CSV
+Palette ufficiale di Stand up, usata nei documenti e nei mockup del progetto.
 
+| Colore | HEX | RGB |
+| --- | --- | --- |
+| Coffee Bean | `#171219` | `23, 18, 25` |
+| Lime Cream | `#cbff8c` | `203, 255, 140` |
+| Brick Ember | `#c03221` | `192, 50, 33` |
+| Ghost White | `#f7f7ff` | `247, 247, 255` |
+| Jungle Teal | `#3f826d` | `63, 130, 109` |
+
+## Esportazioni
+
+### CSV
+
+```text
 171219,cbff8c,c03221,f7f7ff,3f826d
+```
 
-- With #
+### HEX
 
+```text
+171219,cbff8c,c03221,f7f7ff,3f826d
+```
+
+### HEX con cancelletto
+
+```text
 #171219, #cbff8c, #c03221, #f7f7ff, #3f826d
+```
 
-- Array
+### Array JSON
 
+```json
 ["171219","cbff8c","c03221","f7f7ff","3f826d"]
+```
 
-- Object
+### Oggetto JSON
 
+```json
 {"Coffee Bean":"171219","Lime Cream":"cbff8c","Brick Ember":"c03221","Ghost White":"f7f7ff","Jungle Teal":"3f826d"}
+```
 
-- Extended Array
+### Array esteso JSON
 
+```json
 [{"name":"Coffee Bean","hex":"171219","rgb":[23,18,25],"cmyk":[8,28,0,90],"hsb":[283,28,10],"hsl":[283,16,8],"lab":[6,4,-4]},{"name":"Lime Cream","hex":"cbff8c","rgb":[203,255,140],"cmyk":[20,0,45,0],"hsb":[87,45,100],"hsl":[87,100,77],"lab":[94,-35,49]},{"name":"Brick Ember","hex":"c03221","rgb":[192,50,33],"cmyk":[0,74,83,25],"hsb":[6,83,75],"hsl":[6,71,44],"lab":[44,55,44]},{"name":"Ghost White","hex":"f7f7ff","rgb":[247,247,255],"cmyk":[3,3,0,0],"hsb":[240,3,100],"hsl":[240,100,98],"lab":[97,1,-4]},{"name":"Jungle Teal","hex":"3f826d","rgb":[63,130,109],"cmyk":[52,0,16,49],"hsb":[161,52,51],"hsl":[161,35,38],"lab":[50,-27,5]}]
+```
 
-- XML
+### XML
 
+```xml
 <palette>
   <color name="Coffee Bean" hex="171219" r="23" g="18" b="25" />
   <color name="Lime Cream" hex="cbff8c" r="203" g="255" b="140" />
@@ -29,10 +58,12 @@ Versione Code
   <color name="Ghost White" hex="f7f7ff" r="247" g="247" b="255" />
   <color name="Jungle Teal" hex="3f826d" r="63" g="130" b="109" />
 </palette>
+```
 
 
+## SVG
 
-versione SVG
+```svg
 <?xml version="1.0" encoding="utf-8"?>
           <!-- Exported from Coolors.co - https://coolors.co/171219-cbff8c-c03221-f7f7ff-3f826d -->
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 500 250" xml:space="preserve">
@@ -40,9 +71,12 @@ versione SVG
             <text x="10" y="235" font-family="Arial" font-size="6" alignment-baseline="middle">Exported from Coolors.co</text>
             <text x="490" y="235" font-family="Arial" font-size="6" alignment-baseline="middle" text-anchor="end">https://coolors.co/171219-cbff8c-c03221-f7f7ff-3f826d</text>
           </svg>
+```
 
 
-versione Tailwind
+## Tailwind CSS
+
+```css
 --color-coffee-bean-50: #f3f0f4;
 --color-coffee-bean-100: #e7e1ea;
 --color-coffee-bean-200: #d0c4d4;
@@ -102,4 +136,5 @@ versione Tailwind
 --color-jungle-teal-800: #21453a;
 --color-jungle-teal-900: #11221d;
 --color-jungle-teal-950: #0c1814;
+```
 

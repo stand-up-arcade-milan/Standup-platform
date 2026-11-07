@@ -82,6 +82,8 @@ La proposta coerente con il repository è:
 | Livello | Tecnologia proposta | Responsabilità |
 | --- | --- | --- |
 | Portale web | React | Cruscotto operativo, consultazione e portale espositore |
+| Linguaggio frontend | TypeScript | Tipi condivisi per richieste e risposte dell’API |
+| Runtime e strumenti frontend | Bun | Installazione dipendenze, script e build del frontend |
 | App operative | Power Apps | Back office commerciale e scansione allo stand, se la prova tecnica ne conferma l’idoneità |
 | API | Java, Spring Boot, REST | Regole, validazione, integrazione e autorizzazioni |
 | Descrizione API | OpenAPI e Swagger UI | Contratto leggibile e documentazione degli endpoint |
@@ -97,6 +99,8 @@ La proposta coerente con il repository è:
 - **SharePoint**: è adatto a documenti e collaborazione. Le transazioni e le relazioni principali restano nel modello PostgreSQL proposto.
 - **Power Apps e React non devono duplicare le stesse schermate**: dobbiamo scegliere per ogni flusso il client più adatto dopo una prova su autenticazione, uso mobile o desktop, connettori e licenze.
 - Le integrazioni con tornelli e scanner dipendono da hardware, protocolli, rete sul posto e API del fornitore.
+- PostgreSQL è il database scelto; MongoDB non viene aggiunto. Il modello ha relazioni, vincoli unici e permessi per espositore già espressi nelle migrazioni SQL, quindi un database documentale introdurrebbe un secondo modello senza coprire un bisogno attuale. Riferimenti: [vincoli PostgreSQL](https://www.postgresql.org/docs/current/ddl-constraints.html), [row-level security PostgreSQL](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), [modellazione MongoDB](https://www.mongodb.com/docs/manual/data-modeling/).
+- Il contratto condiviso delle richieste e risposte è in [openapi.yaml](openapi.yaml). BID possiede l’API Spring Boot e i dati sorgente; BAD definisce i KPI e invia i risultati al backend BID per la consultazione dei client.
 
 ## 3. Filoni e responsabilità
 
@@ -291,4 +295,5 @@ La piattaforma nasce con la protezione dei dati nel progetto, come chiede il GDP
 ## Riferimenti del repository
 
 - [README e visione generale](../README.md)
-- [Palette ufficiale e banner](assets/arcade-banner.svg)
+- [Palette ufficiale](palette-colori.md) · [Banner](assets/arcade-banner.svg)
+- [Contratto API OpenAPI](openapi.yaml)

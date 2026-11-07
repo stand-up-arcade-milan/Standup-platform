@@ -2,7 +2,7 @@
 
 Documento di lavoro del team **Stand up** per ARCADE Milano 2026. Raccoglie come dovrebbe comportarsi il portale web in React per espositori, visitatori e staff, con le idee tratte da due portali fieristici pubblici. Sono proposte da validare con il gruppo e con il cliente: dove serve una scelta, la scelta è già indicata e si può cambiare con un parametro.
 
-Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md)
+Torna al [README](../README.md) · [Blueprint digitale](blueprint-digitale.md) · [Contratto API](openapi.yaml)
 
 ## 1. Principi
 
@@ -104,6 +104,8 @@ Una tabella semplice di comunicazioni di servizio, come cambi di orario, varchi 
 
 ## 8. Dati e API da aggiungere
 
+Questi endpoint per il portale sono parte del contratto completo in [openapi.yaml](openapi.yaml), che include anche back office, simulatori e scambio dati BID–BAD.
+
 | Elemento | Descrizione |
 | --- | --- |
 | `categoria`, `espositore_categoria` | Categorie e collegamento con gli espositori, per filtri e ricerca per interessi |
@@ -122,7 +124,7 @@ Una tabella semplice di comunicazioni di servizio, come cambi di orario, varchi 
 - Matchmaking tra visitatori ed espositori e agenda personale con account, per i dati personali e i tempi.
 - Verifica dell'età con la domanda "hai più di 18 anni", che è solo una dichiarazione.
 - Area stampa e accrediti: possibile sviluppo futuro, come profilo facoltativo.
-- Grafica, immagini e testi dei siti di riferimento: il progetto usa la palette ufficiale di Stand up e immagini proprie o libere da diritti, con la fonte indicata.
+- Grafica, immagini e testi dei siti di riferimento: il progetto usa la [palette ufficiale di Stand up](palette-colori.md) e immagini proprie o libere da diritti, con la fonte indicata.
 
 ## 10. Riferimenti
 
