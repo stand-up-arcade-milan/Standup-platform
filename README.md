@@ -475,7 +475,7 @@ Il team è organizzato nelle aree BID e BAD, più alcune responsabilità trasver
 
 | Data | Risultato atteso |
 | --- | --- |
-| 6 novembre 2026 · SAL 1 | Requisiti, schema dati, contratto API e mockup presentati, KPI approvati dal cliente |
+| 6 novembre 2026 · SAL 1 | Requisiti e KPI approvati dal cliente |
 | 4 dicembre 2026 · SAL 2 | Edizioni 2024 e 2025 caricate, API base e un contratto 2026 dalla pratica alla firma |
 | 17 dicembre 2026 · Presentazione finale | Demo dal vivo delle tre fasi, repository unico e documentazione |
 
