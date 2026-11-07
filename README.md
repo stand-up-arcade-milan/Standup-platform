@@ -548,7 +548,7 @@ Branch di lavoro:
 - [CI/CD GitHub Actions](docs/ci-cd.md): controlli automatici su push/PR, smoke check Docker Compose e pubblicazione versionata delle immagini su GHCR.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
-- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL.
+- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL; nella V008 le correzioni dal contratto API e le scansioni 2026; nella V009 area commerciale, account degli espositori e KPI ricevuti da BAD.
 - [Contratto API OpenAPI](docs/openapi.yaml): richieste, risposte, schemi, sicurezza e scambio dati tra BID e BAD; bozza da allineare con entrambi i gruppi.
 - [Brief del laboratorio](docs/fonti/Progetto_Laboratorio_Integrato_BAD-BID_compilato.docx) e [Gantt](docs/fonti/Gantt-Stand-UP.pdf): consegna, responsabilità e milestone del progetto.
 
