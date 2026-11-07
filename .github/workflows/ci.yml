@@ -82,8 +82,8 @@ jobs:
         run: |
           for attempt in $(seq 1 45); do
             if curl -fsS http://localhost:5173/ >/dev/null \
-              && curl -fsS http://localhost:5173/api/v1/health | grep -q '"status":"UP"' \
-              && curl -fsS http://localhost:5173/actuator/health | grep -q '"db":{"status":"UP"'; then
+              && curl -fsS http://localhost:5173/api/v1/health | jq -e '.status == "UP"' >/dev/null \
+              && curl -fsS http://localhost:5173/actuator/health | jq -e '.components.db.status == "UP"' >/dev/null; then
               echo "Frontend, API, and PostgreSQL are reachable through Compose."
               exit 0
             fi
