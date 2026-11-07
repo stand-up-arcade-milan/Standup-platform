@@ -167,6 +167,8 @@ Regole:
 
 ## 8. Schema
 
+Questo diagramma riguarda lo schema per i dati storici 2024 e 2025. Lo schema completo, con le novità del SAL 1, è nel [modello ER](modello-er.md).
+
 ```mermaid
 erDiagram
     EDIZIONE ||--o{ ORDINE : contiene

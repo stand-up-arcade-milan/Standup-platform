@@ -182,7 +182,7 @@ Il wireframe usa valori segnaposto solo per mostrare la gerarchia visiva: non so
 
 ## 6. Modello dati iniziale
 
-Le entità seguenti sono una base per la discussione con BID e BAD. Le relazioni e i campi vanno definiti nel modello ER prima di implementare.
+Le entità seguenti sono una base per la discussione con BID e BAD. Il [modello ER](modello-er.md) mostra tabelle, chiavi e relazioni come sono nelle migrazioni da `V001` a `V007`.
 
 - **Edizione**: anno, date, sede e stato.
 - **Organizzazione / Espositore**: anagrafica, referente e stato.
