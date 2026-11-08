@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, ApiError, clearToken, formatDate, formatEuro, query, readToken, saveToken } from '../services/api'
+import { api, ApiError, clearToken, downloadFile, formatDate, formatEuro, query, readToken, saveToken } from '../services/api'
 
 export const Route = createFileRoute('/espositore')({ component: ExhibitorPage })
 
 type Stand = { codice: string; padiglione: string; superficieMq?: number; stato: string }
 type Profile = { id: string; ragioneSociale: string; edizione: number; stand?: Stand | null; pacchetto?: string }
-type Contract = { edizione: number; stato: string; pacchetto: string; codiceStand?: string; totaleEur?: number | null; accontiEur?: number | null; acconti?: { importoEur: number; ricevutoIl: string }[]; documenti?: { id: string; tipo: string; nome: string; url?: string | null; creatoIl: string }[] }
-type Contact = { id: string; codiceStand: string; raccoltoIl: string; fasciaEta: string; provincia: string; interesse: string; email?: string | null; consensoEspositori: boolean; consensoMarketing: string }
+type Contract = { edizione: number; stato: string; pacchetto: string; codiceStand?: string; totaleEur?: number | null; accontiEur?: number | null; acconti?: { importoEur: number; ricevutoIl: string }[]; documenti?: { id: string; tipo: string; nome: string; url?: string | null; downloadUrl?: string | null; dimensioneByte?: number | null; sha256?: string | null; creatoIl: string }[] }
+type Contact = { id: string; anno: number; codiceStand: string; raccoltoIl: string; interesse: string; idLeadMagnet?: number | null; email: string }
 type Kpi = { codice: string; valore: number; unita: string; qualita: string; stimato: boolean; simulato: boolean; nota?: string }
 type Notice = { id: string; titolo: string; testo: string; pubblicatoIl: string }
 type WeightSeries = { minuto: string; presenzeStimate: number; letture: number; fonte?: string }
@@ -172,12 +172,18 @@ function ExhibitorPage() {
 
       <section className="panel">
         <div className="panel-heading"><div><p className="eyebrow">DOCUMENTI</p><h3>Contratto e offerte</h3></div><span className="count-pill">{contract?.documenti?.length ?? 0}</span></div>
-        {messages.contract ? <p className="quiet-state">{messages.contract}</p> : !contract?.documenti?.length ? <p className="quiet-state">I documenti compariranno qui quando saranno archiviati dal team commerciale.</p> : <ul className="document-list">{contract.documenti.map((document) => <li key={document.id}><span className="document-icon">{document.tipo}</span><span><strong>{document.nome}</strong><small>Caricato il {formatDate(document.creatoIl)}</small></span>{document.url ? <a href={document.url} target="_blank" rel="noreferrer">Apri ↗</a> : <small>File non ancora archiviato</small>}</li>)}</ul>}
+        {messages.contract ? <p className="quiet-state">{messages.contract}</p> : !contract?.documenti?.length ? <p className="quiet-state">I documenti compariranno qui quando saranno archiviati dal team commerciale.</p> : <ul className="document-list">{contract.documenti.map((document) => <li key={document.id}><span className="document-icon">{document.tipo}</span><span><strong>{document.nome}</strong><small>Caricato il {formatDate(document.creatoIl)}</small></span>{document.downloadUrl ? <button className="text-button" onClick={() => void downloadFile(document.downloadUrl!.replace('/api/v1', ''), document.nome, 'exhibitor').catch((error) => setMessages((current) => ({ ...current, contract: error instanceof Error ? error.message : 'Download non riuscito.' })))}>Scarica PDF</button> : document.url ? <a href={document.url} target="_blank" rel="noreferrer">Apri</a> : <small>File non ancora archiviato</small>}</li>)}</ul>}
         <div className="notice-section"><div className="panel-heading"><div><p className="eyebrow">AVVISI</p><h3>Comunicazioni per te</h3></div></div>{messages.notices ? <p className="quiet-state">{messages.notices}</p> : notices.length === 0 ? <p className="quiet-state">Nessun avviso attivo.</p> : notices.map((item) => <article className="notice-card" key={item.id}><div><strong>{item.titolo}</strong><small>{formatDate(item.pubblicatoIl)}</small></div><p>{item.testo}</p></article>)}</div>
       </section>
     </div>
 
-    <section className="panel contacts-panel"><div className="panel-heading"><div><p className="eyebrow">CONTATTI ALLO STAND</p><h3>Interazioni registrate</h3></div><span className="privacy-mark">{contacts.length} contatti caricati · privacy protetta</span></div>{messages.contacts ? <p className="quiet-state">{messages.contacts}</p> : contacts.length === 0 ? <p className="quiet-state">Le interazioni autorizzate appariranno qui senza email e senza nomi dei visitatori.</p> : <><div className="table-wrap"><table><thead><tr><th>Stand</th><th>Data e ora</th><th>Fascia d’età</th><th>Provincia</th><th>Interesse</th><th>Email condivisa</th><th>Consenso espositori</th><th>Consenso marketing</th></tr></thead><tbody>{contacts.map((item) => <tr key={item.id}><td>{item.codiceStand}</td><td>{formatDate(item.raccoltoIl)}</td><td>{item.fasciaEta}</td><td>{item.provincia}</td><td>{item.interesse}</td><td>{item.email ?? '—'}</td><td>{item.consensoEspositori ? 'Sì' : 'No'}</td><td>{item.consensoMarketing}</td></tr>)}</tbody></table></div>{contactCursor && <button className="button button--outline" onClick={() => void loadMoreContacts()}>Carica altri contatti</button>}</>}</section>
+    <section className="panel contacts-panel">
+      <div className="panel-heading"><div><p className="eyebrow">CONTATTI ALLO STAND</p><h3>Lead condivisi</h3></div><span className="privacy-mark">{contacts.length} lead idonei</span></div>
+      {messages.contacts ? <p className="quiet-state">{messages.contacts}</p> : contacts.length === 0 ? <p className="quiet-state">Qui compaiono solo lead adulti con consenso alla condivisione, consenso marketing e interesse qualificato.</p> : <>
+        <div className="table-wrap"><table><thead><tr><th>Stand</th><th>Data e ora</th><th>Interesse</th><th>Email condivisa</th></tr></thead><tbody>{contacts.map((item) => <tr key={item.id}><td>{item.codiceStand}</td><td>{formatDate(item.raccoltoIl)}</td><td>{item.interesse}</td><td>{item.email}</td></tr>)}</tbody></table></div>
+        {contactCursor && <button className="button button--outline" onClick={() => void loadMoreContacts()}>Carica altri lead</button>}
+      </>}
+    </section>
   </section>
 }
 

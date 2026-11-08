@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, ApiError, formatDate, formatEuro, query, readToken, saveToken } from '../services/api'
+import { api, ApiError, downloadFile, formatDate, formatEuro, query, readToken, saveToken } from '../services/api'
 
 export const Route = createFileRoute('/commerciale')({ component: CommercialPage })
 
@@ -24,7 +24,7 @@ function CommercialPage() {
   const [standSearch, setStandSearch] = useState('')
   const [standPage, setStandPage] = useState(0)
   const [selected, setSelected] = useState<Practice | null>(null)
-  const [documents, setDocuments] = useState<{ id: string; tipo: string; nome: string; url?: string | null; creatoIl: string }[]>([])
+  const [documents, setDocuments] = useState<{ id: string; tipo: string; nome: string; url?: string | null; downloadUrl?: string | null; mimeType?: string | null; dimensioneByte?: number | null; sha256?: string | null; creatoIl: string }[]>([])
   const [offerDiscount, setOfferDiscount] = useState(0)
   const [busy, setBusy] = useState(true)
   const [notice, setNotice] = useState('')
@@ -122,7 +122,7 @@ function CommercialPage() {
     if (!selected) return
     try {
       const doc = await api<{ nome: string }>('/pratiche/' + selected.id + '/offerta', { method: 'POST', body: JSON.stringify({ scontoPercentuale: offerDiscount }) }, 'internal')
-      setNotice(`Metadati offerta registrati: ${doc.nome}. Il file sarà disponibile dopo la configurazione dell’archivio documentale.`)
+      setNotice(`PDF dell'offerta generato e archiviato: ${doc.nome}.`)
       await selectPractice(selected)
       await load()
     } catch (error) { setFailure(error instanceof Error ? error.message : 'Creazione offerta non riuscita.') }
@@ -198,7 +198,7 @@ function CommercialPage() {
             <dl className="detail-list"><div><dt>Espositore</dt><dd>{exhibitors.find((company) => company.id === selected.idEspositore)?.nomePubblico ?? selected.idEspositore}</dd></div><div><dt>Edizione</dt><dd>{selected.edizione}</dd></div><div><dt>Stand</dt><dd>{selected.codiceStand ?? 'Da assegnare'}</dd></div><div><dt>Importo</dt><dd>{formatEuro(selected.totaleEur)}</dd></div></dl>
             <div className="action-row">{selected.stato === 'BOZZA' && <button className="button button--dark" onClick={() => void transition('INVIATA')}>Invia</button>}{selected.stato === 'INVIATA' && <button className="button button--dark" onClick={() => void transition('FIRMATA')}>Segna firmata</button>}{selected.stato === 'FIRMATA' && <button className="button button--dark" onClick={() => void transition('ACCONTO_RICEVUTO')}>Acconto ricevuto</button>}<button className="button button--outline" onClick={() => void createOffer()}>Prepara offerta</button><button className="button button--outline" onClick={() => void renewPractice()}>Crea rinnovo</button></div>
             <label className="discount-field">Sconto offerta (%)<input type="number" min="0" max="100" step="0.01" value={offerDiscount} onChange={(event) => setOfferDiscount(Number(event.target.value))} /></label>
-            {documents.length > 0 && <ul className="document-list">{documents.map((document) => <li key={document.id}><span className="document-icon">{document.tipo}</span><span><strong>{document.nome}</strong><small>{formatDate(document.creatoIl)}</small></span>{document.url ? <a href={document.url} target="_blank" rel="noreferrer">Apri ↗</a> : <small>File non archiviato</small>}</li>)}</ul>}
+            {documents.length > 0 && <ul className="document-list">{documents.map((document) => <li key={document.id}><span className="document-icon">{document.tipo}</span><span><strong>{document.nome}</strong><small>{formatDate(document.creatoIl)}{document.dimensioneByte ? ` · ${(document.dimensioneByte / 1024).toFixed(1)} KB` : ''}</small></span>{document.downloadUrl ? <button className="text-button" onClick={() => void downloadFile(document.downloadUrl!.replace('/api/v1', ''), document.nome, 'internal').catch((error) => setFailure(error instanceof Error ? error.message : 'Download non riuscito.'))}>Scarica PDF</button> : document.url ? <a href={document.url} target="_blank" rel="noreferrer">Apri</a> : <small>File non archiviato</small>}</li>)}</ul>}
             <form className="advance-form" onSubmit={(event) => void addAdvance(event)}><strong>Registra un acconto</strong><div className="form-row"><label>Importo (€)<input name="amount" type="number" min="0.01" step="0.01" required /></label><label>Data<input name="date" type="date" required /></label></div><label>Riferimento<input name="reference" maxLength={120} placeholder="Riferimento pagamento" /></label><button className="button button--lime">Registra pagamento</button></form>
           </> : <Empty text="Apri una riga della pipeline per vedere i dettagli e le azioni consentite." />}
         </section>

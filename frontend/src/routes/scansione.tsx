@@ -5,7 +5,7 @@ import { api, ApiError, readToken, saveToken } from '../services/api'
 
 export const Route = createFileRoute('/scansione')({ component: ScanPage })
 
-type ScanResult = { eventId: string; accettata: boolean; duplicata: boolean; conteggioStand: number; messaggio?: string }
+type ScanResult = { eventId: string; accettata: boolean; duplicata: boolean; conteggioStand: number; leadAcquisito: boolean; messaggio?: string }
 type LeadMagnet = { id: number; titolo: string; tipo: string }
 type Barcode = { rawValue: string }
 type Detector = { detect: (source: HTMLVideoElement) => Promise<Barcode[]> }
@@ -20,6 +20,8 @@ function ScanPage() {
   const [email, setEmail] = useState('')
   const [shareContact, setShareContact] = useState(false)
   const [consentExhibitors, setConsentExhibitors] = useState(false)
+  const [consentMarketing, setConsentMarketing] = useState(false)
+  const [ageBand, setAgeBand] = useState('')
   const [leadMagnets, setLeadMagnets] = useState<LeadMagnet[]>([])
   const [leadMagnetId, setLeadMagnetId] = useState('')
   const [cameraMessage, setCameraMessage] = useState('')
@@ -37,10 +39,11 @@ function ScanPage() {
     stream.current = null
   }, [])
   useEffect(() => {
-    api<{ items: LeadMagnet[] }>(`/lead-magnet?edizione=${encodeURIComponent(edition)}`)
+    const booth = stand.trim()
+    api<{ items: LeadMagnet[] }>(`/lead-magnet?edizione=${encodeURIComponent(edition)}${booth ? `&stand=${encodeURIComponent(booth)}` : ''}`)
       .then((response) => setLeadMagnets(response.items ?? []))
       .catch(() => setLeadMagnets([]))
-  }, [edition])
+  }, [edition, stand])
 
   async function startCamera() {
     setCameraMessage('')
@@ -86,10 +89,12 @@ function ScanPage() {
         body: JSON.stringify({
           eventId: crypto.randomUUID(), edizione: Number(edition), codiceStand: stand.trim(), operatoreId: operator.trim(),
           rilevataIl: new Date().toISOString(), ticketRef: ticketRef.trim(),
-          consensoEspositori: consentExhibitors, ...(leadMagnetId ? { idLeadMagnet: Number(leadMagnetId) } : {}), ...(shareContact ? { email: email.trim() } : {}),
+          consensoEspositori: consentExhibitors, consensoMarketing: consentMarketing,
+          ...(consentExhibitors && consentMarketing && ageBand ? { fasciaEta: ageBand } : {}), ...(leadMagnetId ? { idLeadMagnet: Number(leadMagnetId) } : {}),
+          ...(shareContact && consentExhibitors && consentMarketing ? { email: email.trim() } : {}),
         }),
       }, 'internal')
-      setResult(response); setTicketRef(''); setEmail(''); setShareContact(false); setConsentExhibitors(false); setLeadMagnetId('')
+      setResult(response); setTicketRef(''); setEmail(''); setShareContact(false); setConsentExhibitors(false); setConsentMarketing(false); setAgeBand(''); setLeadMagnetId('')
     } catch (reason) {
       setError(reason instanceof ApiError && reason.status === 401 ? 'Token non valido o scaduto. Ricollega un token operatore.' : reason instanceof Error ? reason.message : 'Invio non riuscito. La scansione resta nel modulo per consentire un nuovo tentativo.')
     } finally { setSending(false) }
@@ -119,17 +124,24 @@ function ScanPage() {
         <div className="form-row"><label>Edizione<select value={edition} onChange={(event) => setEdition(event.target.value)}><option>2026</option><option>2025</option><option>2024</option></select></label><label>Stand<input required value={stand} onChange={(event) => setStand(event.target.value.toUpperCase())} placeholder="Es. A-014" maxLength={20} /></label></div>
         <label>Identificativo operatore<input required value={operator} onChange={(event) => setOperator(event.target.value)} placeholder="ID assegnato allo staff" maxLength={80} /></label>
         <label>Codice QR visitatore<input required value={ticketRef} onChange={(event) => setTicketRef(event.target.value)} placeholder="Scansiona o digita il codice" autoComplete="off" maxLength={240} /></label>
-        <label>Lead magnet promosso allo stand<select value={leadMagnetId} onChange={(event) => setLeadMagnetId(event.target.value)}><option value="">Nessuno</option>{leadMagnets.map((item) => <option key={item.id} value={item.id}>{item.titolo} · {item.tipo}</option>)}</select></label>
+        <label>Lead magnet promosso allo stand<select required={consentMarketing} value={leadMagnetId} onChange={(event) => setLeadMagnetId(event.target.value)}><option value="">Nessuno</option>{leadMagnets.map((item) => <option key={item.id} value={item.id}>{item.titolo} · {item.tipo}</option>)}</select></label>
 
-        <div className="consent-box"><div><strong>Condivisione del contatto</strong><p>Facoltativa. Chiedi il consenso prima di raccogliere un’email.</p></div><label className="toggle"><input type="checkbox" checked={shareContact} onChange={(event) => { setShareContact(event.target.checked); if (!event.target.checked) setConsentExhibitors(false) }} /><span /></label></div>
-        {shareContact && <div className="consent-details"><label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="off" /></label><label className="consent-check"><input type="checkbox" required checked={consentExhibitors} onChange={(event) => setConsentExhibitors(event.target.checked)} /> Il visitatore acconsente alla condivisione dei dati con l’espositore.</label></div>}
-
-        <button className="button button--dark button--wide" type="submit" disabled={sending || !readToken('internal') || (shareContact && !consentExhibitors)}>{sending ? 'Invio in corso…' : 'Registra visita'}<span aria-hidden="true">↗</span></button>
+        <div className="consent-box"><div><strong>Consensi per un contatto condivisibile</strong><p>La visita si registra anche senza raccogliere dati personali.</p></div><label className="toggle"><input type="checkbox" checked={shareContact} onChange={(event) => { setShareContact(event.target.checked); if (!event.target.checked) { setConsentExhibitors(false); setConsentMarketing(false); setAgeBand(''); setEmail('') } }} /><span /></label></div>
+        {shareContact && <div className="consent-details">
+          <label className="consent-check"><input type="checkbox" checked={consentExhibitors} onChange={(event) => setConsentExhibitors(event.target.checked)} /> Il visitatore acconsente alla condivisione dei dati con l’espositore.</label>
+          <label className="consent-check"><input type="checkbox" checked={consentMarketing} onChange={(event) => setConsentMarketing(event.target.checked)} /> Il visitatore acconsente separatamente all’uso marketing del lead.</label>
+          {consentMarketing && <>
+            <label>Fascia adulta autodichiarata<select required value={ageBand} onChange={(event) => setAgeBand(event.target.value)}><option value="">Seleziona</option><option value="18-24">18–24</option><option value="25-34">25–34</option><option value="35-44">35–44</option><option value="45+">45+</option></select></label>
+            <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="off" /></label>
+          </>}
+          <p className="form-note">L’email viene conservata solo con entrambi i consensi, una fascia adulta e un lead magnet attivo.</p>
+        </div>}
+        <button className="button button--dark button--wide" type="submit" disabled={sending || !readToken('internal') || (consentMarketing && (!consentExhibitors || !ageBand || !leadMagnetId || !email.trim()))}>{sending ? 'Invio in corso…' : 'Registra visita'}<span aria-hidden="true">↗</span></button>
         <p className="form-note">La seconda scansione dello stesso codice allo stesso stand non incrementa il conteggio. L’esito è deciso dall’API.</p>
       </form>
     </div>
 
-    {result && <section className={`scan-result ${result.duplicata ? 'scan-result--duplicate' : ''}`} aria-live="polite"><div className="result-icon">{result.duplicata ? '↺' : '✓'}</div><div><p className="eyebrow">{result.duplicata ? 'DUPLICATO RICONOSCIUTO' : 'VISITA REGISTRATA'}</p><h3>{result.messaggio ?? 'Scansione acquisita.'}</h3><p>Stand {stand} · Conteggio aggiornato dall’API</p></div><strong>{result.conteggioStand}<small>visite</small></strong></section>}
+    {result && <section className={`scan-result ${result.duplicata ? 'scan-result--duplicate' : ''}`} aria-live="polite"><div className="result-icon">{result.duplicata ? '↺' : '✓'}</div><div><p className="eyebrow">{result.duplicata ? 'DUPLICATO RICONOSCIUTO' : 'VISITA REGISTRATA'}</p><h3>{result.messaggio ?? 'Scansione acquisita.'}</h3>{result.leadAcquisito ? <p>Lead registrato con i consensi richiesti.</p> : <p>Solo il conteggio della visita è stato registrato; nessun dato personale è stato conservato.</p>}<p>Stand {stand} · Conteggio aggiornato dall’API</p></div><strong>{result.conteggioStand}<small>visite</small></strong></section>}
     <p className="screen-footnote">In caso di rete assente, l’evento non viene salvato localmente: riprova l’invio quando la connessione torna disponibile.</p>
   </section>
 }

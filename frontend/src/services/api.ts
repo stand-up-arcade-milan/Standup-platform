@@ -45,6 +45,25 @@ export async function api<T>(path: string, options: RequestInit = {}, tokenKind?
   return body as T
 }
 
+export async function downloadFile(path: string, filename: string, tokenKind: 'exhibitor' | 'internal') {
+  const headers = new Headers()
+  const token = readToken(tokenKind)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const response = await fetch(`${base}${path}`, { headers })
+  if (!response.ok) {
+    const problem = await response.json().catch(() => undefined)
+    throw new ApiError(response.status, problem as ApiProblem | undefined)
+  }
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  link.rel = 'noopener'
+  link.click()
+  URL.revokeObjectURL(objectUrl)
+}
+
 export function query(values: Record<string, string | number | boolean | undefined>) {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(values)) {
