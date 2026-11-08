@@ -1,0 +1,102 @@
+name: Database e documenti
+
+# Costruisce l'immagine del database del progetto e la avvia da zero, quindi le migrazioni
+# vengono applicate dall'entrypoint come succede davvero alla prima accensione. Se una
+# migrazione fallisce, il contenitore esce e qui si vede: il controllo Compose non se ne
+# accorge, perché al riavvio PostgreSQL trova la cartella dati già creata e salta
+# l'inizializzazione, partendo con lo schema a metà.
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  schema-e-documenti:
+    name: Migrazioni da zero e documenti allineati
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_APP_PASSWORD: ci-only-app-password
+      DSN: postgresql://arcade_admin:ci-only-password@127.0.0.1:5432/arcade
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Installa le dipendenze degli script
+        run: python -m pip install --quiet -r scripts/dati/requirements.txt
+
+      - name: Costruisci l'immagine del database del progetto
+        run: docker build --file Dockerfile --tag arcade-db:ci .
+
+      # Le stesse variabili del Compose locale. L'entrypoint crea il ruolo applicativo
+      # e poi applica le migrazioni in ordine alfabetico.
+      - name: Avvia il database e applica le migrazioni
+        run: |
+          docker run -d --name arcade-ci \
+            -e POSTGRES_USER=arcade_admin \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_APP_PASSWORD="$POSTGRES_APP_PASSWORD" \
+            -e POSTGRES_DB=arcade \
+            -p 127.0.0.1:5432:5432 arcade-db:ci
+          # Durante l'inizializzazione l'entrypoint avvia un server temporaneo che ascolta
+          # solo sul socket interno, quindi pg_isready su 127.0.0.1 dentro al contenitore
+          # risponde soltanto a migrazioni finite. La porta pubblicata non va usata come
+          # prova: Docker la apre subito, prima che il database esista.
+          for _ in $(seq 1 120); do
+            if [ "$(docker inspect -f '{{.State.Running}}' arcade-ci)" != "true" ]; then
+              echo "::error::L'inizializzazione del database è fallita: una migrazione non si applica su un database vuoto."
+              docker logs arcade-ci
+              exit 1
+            fi
+            if docker exec arcade-ci pg_isready -h 127.0.0.1 -p 5432 -U arcade_admin -d arcade >/dev/null 2>&1; then
+              echo "Migrazioni applicate, database pronto."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Il database non è diventato pronto entro il tempo previsto."
+          docker logs arcade-ci
+          exit 1
+
+      - name: Conta le tabelle create
+        run: |
+          docker exec arcade-ci psql -U arcade_admin -d arcade -Atc \
+            "select 'tabelle: '||count(*) from information_schema.tables where table_schema='arcade' and table_type='BASE TABLE'"
+          docker exec arcade-ci psql -U arcade_admin -d arcade -Atc \
+            "select 'colonne descritte: '||count(*) from arcade.dizionario_dati"
+
+      - name: Il modello ER cita tutte le tabelle
+        run: python scripts/dati/verifica_modello_er.py --dsn "$DSN"
+
+      - name: Il dizionario dati è aggiornato
+        run: |
+          python scripts/dati/genera_doc_dizionario.py --dsn "$DSN"
+          if ! git diff --quiet -- docs/dizionario-dati.md; then
+            echo "::error file=docs/dizionario-dati.md::Il dizionario non corrisponde al database. Rigeneralo con scripts/dati/genera_doc_dizionario.py e aggiungi il file al commit."
+            git --no-pager diff -- docs/dizionario-dati.md
+            exit 1
+          fi
+          echo "Il dizionario corrisponde al database."
+
+      - name: Registro del database se qualcosa fallisce
+        if: failure()
+        run: docker logs arcade-ci || true
+
+      - name: Ferma il database
+        if: always()
+        run: docker rm -f arcade-ci || true

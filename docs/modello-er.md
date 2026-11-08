@@ -1,6 +1,6 @@
 # Modello ER
 
-Il diagramma descrive lo schema `arcade` di PostgreSQL così come lo costruiscono le [migrazioni](../database/migrations) da `V001` a `V014`. Se diagramma e SQL non coincidono, vale l'SQL. Il significato di ogni colonna è nel [dizionario dati](dizionario-dati.md).
+Il diagramma descrive lo schema `arcade` di PostgreSQL così come lo costruiscono le [migrazioni](../database/migrations) da `V001` a `V026`. Se diagramma e SQL non coincidono, vale l'SQL. Il significato di ogni colonna è nel [dizionario dati](dizionario-dati.md).
 
 ## 1. Modello completo
 
@@ -277,15 +277,11 @@ erDiagram
 | Lead magnet | `lead_magnet`, `contatto_stand.id_lead_magnet` | Contatti qualificati (MQL), quota MQL e resa dei lead magnet |
 | Registrazione del visitatore | `registrazione_visitatore`, `registrazione_riservata`, `interesse_visitatore` | Interessi del pubblico, solo come totali e solo per chi è profilabile |
 
-## 4. Novità dalla V008 alla V014
+## 4. Novità dalla V008 alla V026
 
 La `V008` corregge lo schema dopo il confronto con il contratto OpenAPI: sede e stato dell'edizione, nome del padiglione, stand non disponibili, motivo del rifiuto agli ingressi, costi dell'edizione, token di revoca dei consensi, peso senza letture doppie e la tabella `scansione_stand`. Aggiunge anche le viste `v_stand_stato`, `v_visitatori_riepilogo`, `v_costo_per_mql` e `v_visite_stand_scansioni`.
 
 La `V009` costruisce l'area commerciale, l'accesso degli espositori e i KPI ricevuti da BAD. Il disegno mostra solo queste tabelle.
-
-La `V010` conserva dati commerciali storici, informazioni riservate degli espositori e planimetrie per edizione; consente inoltre di pianificare il 2026 senza inventare le date. La `V011` aggiunge le chiavi di idempotenza e i token monouso di recupero password e revoca consensi. La `V012` registra il consenso alla condivisione e il lead magnet della scansione. La `V013` permette di creare i metadati di un documento prima che sia configurato un archivio che fornisca un URL. La `V014` rende indipendente dal `search_path` della connessione il funzionamento dei trigger commerciali.
-
-Le V010–V013 aggiungono anche `espositore_riservato`, `planimetria_stand`, `contratto_storico`, `contratto_storico_riga`, `acquisizione_evento`, `recupero_password` e `revoca_registrazione_visitatore`, oltre ai campi `consenso_espositori`, `id_lead_magnet` e all'URL documentale nullable. Il dettaglio relazionale di queste estensioni è nel SQL delle migrazioni.
 
 ```mermaid
 erDiagram
@@ -413,9 +409,156 @@ erDiagram
 | Il prezzo applicato resta quello dell'offerta anche se il listino cambia | `voce_pratica.prezzo_unitario_eur` |
 | Il ricavo per m² usa le pratiche firmate, al netto di IVA e sconti | Vista `v_ricavo_per_mq` |
 
+
+### Dalla V010 alla V014: storico commerciale, idempotenza e consensi
+
+La `V010` conserva dati commerciali storici, informazioni riservate degli espositori e planimetrie per edizione; consente inoltre di pianificare il 2026 senza inventare le date. La `V011` aggiunge le chiavi di idempotenza e i token monouso di recupero password e revoca consensi. La `V012` registra il consenso alla condivisione e il lead magnet della scansione. La `V013` permette di creare i metadati di un documento prima che sia configurato un archivio che fornisca un URL. La `V014` rende indipendente dal `search_path` della connessione il funzionamento dei trigger commerciali.
+
+Tre tabelle di servizio non compaiono nei disegni perché non hanno legami interessanti: `acquisizione_evento` tiene gli identificativi degli eventi già ricevuti, così un invio ripetuto non viene contato due volte; `revoca_registrazione_visitatore` conserva l'impronta del token con cui il visitatore modifica o revoca i consensi; `dizionario_dati` è il dizionario stesso; `auth_login_rate_limit` conta i tentativi di accesso falliti e `audit_event` registra gli accessi ai dati personali.
+
+```mermaid
+erDiagram
+    espositore ||--o| espositore_riservato : "anagrafica in"
+    espositore ||--o{ pratica : ha
+    pratica ||--o| contratto_storico : "importato da"
+    contratto_storico ||--o{ contratto_storico_riga : contiene
+    edizione ||--o{ planimetria_stand : "nell'edizione"
+    stand ||--o{ planimetria_stand : "collocato in"
+    padiglione ||--o{ planimetria_stand : ospita
+    espositore_riservato {
+        text id_espositore PK
+        text partita_iva
+        text referente
+        text email_referente
+    }
+    planimetria_stand {
+        smallint anno PK
+        text codice_stand PK
+        text padiglione FK
+        numeric superficie_mq
+        text posizione
+    }
+    contratto_storico {
+        text id_contratto_origine PK
+        uuid id_pratica FK
+        numeric imponibile_listino_eur
+        numeric imponibile_netto_eur
+        date data_firma
+        boolean rinnovo
+    }
+    contratto_storico_riga {
+        text id_contratto_origine PK
+        integer numero_riga PK
+        text descrizione
+        numeric importo_eur
+        boolean presente_nel_listino
+    }
+    espositore { text id_espositore PK }
+    pratica { uuid id_pratica PK }
+    stand { text codice PK }
+    padiglione { text codice PK }
+    edizione { smallint anno PK }
+```
+
+### Dalla V015 alla V023: ruoli di esecuzione, registro accessi e proiezioni per BAD
+
+La `V015` è il passo che rende vere le regole di visibilità: crea i ruoli con cui gira l'applicazione, `arcade_api`, `arcade_pubblico`, `arcade_scrittura_pubblica`, `arcade_registrazione`, `arcade_dispositivo` e `arcade_bad`, toglie al ruolo di sola lettura le tabelle dei visitatori e stringe la regola dei contatti: un espositore vede un contatto solo se è suo, se c'è il consenso a condividerlo, se è utilizzabile per il marketing, se la fascia d'età è adulta e, dal 2026, se c'è un lead magnet. Aggiunge anche `auth_login_rate_limit`, che conta i tentativi di accesso falliti, e `audit_event`, il registro degli accessi ai dati personali.
+
+Dalla `V016` alla `V023` arrivano le proiezioni per BAD, che non espongono tabelle riservate, l'archivio dei documenti commerciali dentro il database e l'isolamento dei contratti storici per espositore.
+
+### La V024 e la V025: turni del personale e accesso con Google o Microsoft
+
+La `V024` aggiunge i turni del personale, che servono alla schermata Operatività evento, e allinea due cose lasciate aperte dalle migrazioni precedenti: il pacchetto `NON_DICHIARATO`, che faceva fallire la firma di una pratica importata, e i permessi mancanti sui token della `V011`. La `V026` completa i permessi di lettura sull'edizione.
+
+La `V025` permette di entrare in tre modi, con un solo account: email e password, Google oppure Microsoft. Del fornitore esterno si conserva l'identificativo stabile e non l'email, perché l'email di una persona cambia mentre quell'identificativo no.
+
+```mermaid
+erDiagram
+    espositore ||--o{ account_espositore : accede
+    espositore ||--o{ invito_espositore : invitato
+    account_espositore ||--o{ recupero_password : "reimposta con"
+    account_espositore ||--o{ identita_esterna : "riconosciuto da"
+    fornitore_identita ||--o{ identita_esterna : rilascia
+    membro_staff ||--o| membro_staff_riservato : "nome in"
+    membro_staff ||--o{ assegnazione_turno : "assegnato a"
+    turno ||--o{ assegnazione_turno : "coperto da"
+    edizione ||--o{ turno : "nell'edizione"
+    varco |o--o{ turno : "presidiato in"
+    padiglione |o--o{ turno : "presidiato in"
+    account_espositore {
+        uuid id_account PK
+        text email
+        text password_hash
+        boolean email_verificata
+    }
+    recupero_password {
+        text token_hash PK
+        uuid id_account FK
+        timestamptz scade_il
+        timestamptz usato_il
+    }
+    fornitore_identita {
+        text codice PK
+        text nome
+        boolean attivo
+    }
+    identita_esterna {
+        text fornitore PK
+        text subject PK
+        uuid id_account FK
+        text email_fornitore
+    }
+    membro_staff {
+        uuid id_membro PK
+        text codice
+        text ruolo
+    }
+    membro_staff_riservato {
+        uuid id_membro PK
+        text nome
+        text email
+    }
+    turno {
+        uuid id_turno PK
+        smallint anno FK
+        text varco FK
+        text padiglione FK
+        text mansione
+        timestamptz inizio
+        timestamptz fine
+        smallint persone_previste
+    }
+    assegnazione_turno {
+        uuid id_turno PK
+        uuid id_membro PK
+        boolean confermata
+    }
+    espositore { text id_espositore PK }
+    invito_espositore { text token_hash PK }
+    edizione { smallint anno PK }
+    varco { text codice PK }
+    padiglione { text codice PK }
+```
+
+| Regola | Dove è garantita |
+| --- | --- |
+| Lo stato della pratica va solo avanti: BOZZA, INVIATA, FIRMATA, ACCONTO_RICEVUTO | Trigger `pratica_controlla` |
+| Dopo la bozza la pratica ha uno stand | Vincolo di controllo su `pratica` |
+| Lo sconto sopra la soglia richiede approvazione | Trigger `pratica_controlla`, colonna `approvazione_richiesta` |
+| Alla firma lo stand viene assegnato e il pacchetto registrato, nella stessa transazione | Trigger `pratica_alla_firma` |
+| Il prezzo applicato resta quello dell'offerta anche se il listino cambia | `voce_pratica.prezzo_unitario_eur` |
+| Un'edizione senza date non può essere dichiarata attiva o conclusa | Vincolo `edizione_date_complete_se_confermata` |
+| Un turno sta a un varco oppure in un padiglione, mai in entrambi e mai in nessuno | Vincolo `turno_un_solo_luogo` |
+| La stessa persona non può stare su due turni sovrapposti | Vincolo di esclusione su `assegnazione_turno` |
+| Se il turno viene spostato, gli orari delle assegnazioni lo seguono | Chiave esterna con `ON UPDATE CASCADE` |
+| La stessa identità Google o Microsoft non può valere per due account | Chiave primaria di `identita_esterna` |
+| Ogni colonna del database ha una descrizione nel dizionario | Controllo in fondo a ogni migrazione |
+
 ## 5. Dati personali e visibilità
 
 - **Dati personali separati.** Email e nome non stanno mai nelle tabelle usate per i calcoli: `contatto_riservato` e `registrazione_riservata` sono tabelle a parte. `registrazione_riservata` è leggibile solo dal ruolo `arcade_dati_personali`.
+- **Lo staff e i suoi turni non si vedono dal lato espositore.** `membro_staff`, `turno` e `assegnazione_turno` sono leggibili solo dai ruoli interni, i nomi solo da `arcade_dati_personali`.
+- **Lo staff e i suoi turni non si vedono dal lato espositore.** `membro_staff`, `turno` e `assegnazione_turno` sono leggibili solo dai ruoli interni, i nomi solo da `arcade_dati_personali`. Lo stesso vale per i token di accesso e per l'anagrafica in `espositore_riservato`.
 - **Account e listino restano fuori dalla lettura.** `account_espositore` e `invito_espositore` sono leggibili solo dal ruolo `arcade_autenticazione`, `richiesta_riservata` solo da `arcade_dati_personali`. Il listino, le richieste e i KPI non sono visibili agli espositori. `scansione_stand.operatore_id` e `ticket_ref` non sono leggibili dall'espositore.
 - **Un espositore vede solo il proprio.** Con la row-level security, l'espositore legge il proprio pacchetto, i sensori AI del proprio stand e i lead magnet di ARCADE Milano e i propri. Non vede mai le registrazioni dei visitatori, le pedane o le viste aggregate della direzione.
 - **La stima dal peso è solo PREMIUM.** La policy su `rilevazione_peso` lascia passare le righe solo se l'espositore ha il pacchetto PREMIUM per quell'edizione. Un espositore BASE non le vede nemmeno interrogando il database direttamente.
@@ -425,5 +568,5 @@ erDiagram
 
 - `accesso.codice_biglietto` non ha una chiave esterna verso `biglietto`, perché 70 codici letti ai tornelli non esistono in biglietteria.
 - Pedane, sensori AI e rilevazioni di peso hanno la colonna `fonte`, con valore `SIMULATA` o `SENSORE`, perché nella demo i dati sono simulati.
-- Le viste dei KPI (per esempio `v_presenze_padiglione`, `v_picco_presenza_giorno`, `v_mql_stand`) leggono queste tabelle e non memorizzano dati. Sono definite nelle migrazioni `V003`, `V007`, `V008` e `V009`.
+- Le viste dei KPI (per esempio `v_presenze_padiglione`, `v_picco_presenza_giorno`, `v_mql_stand`) leggono queste tabelle e non memorizzano dati. Sono definite nelle migrazioni dalla `V003` alla `V026`.
 - Il diagramma più vecchio in [dati storici](dati-storici.md) descrive solo lo schema per le edizioni 2024 e 2025. Per il quadro completo vale questo documento.
