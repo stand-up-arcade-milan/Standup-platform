@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccessoRouteImport } from './routes/accesso'
 import { Route as CommercialeRouteImport } from './routes/commerciale'
 import { Route as EspositoreRouteImport } from './routes/espositore'
 import { Route as ScansioneRouteImport } from './routes/scansione'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessoRoute = AccessoRouteImport.update({
+  id: '/accesso',
+  path: '/accesso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommercialeRoute = CommercialeRouteImport.update({
@@ -44,6 +50,7 @@ const ScansioneRoute = ScansioneRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/scansione': typeof ScansioneRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/scansione': typeof ScansioneRoute
@@ -59,22 +67,32 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/scansione': typeof ScansioneRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
+  fullPaths:
+    '/' | '/about' | '/accesso' | '/commerciale' | '/espositore' | '/scansione'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
+  to:
+    '/' | '/about' | '/accesso' | '/commerciale' | '/espositore' | '/scansione'
   id:
-    '__root__' | '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/accesso'
+    | '/commerciale'
+    | '/espositore'
+    | '/scansione'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AccessoRoute: typeof AccessoRoute
   CommercialeRoute: typeof CommercialeRoute
   EspositoreRoute: typeof EspositoreRoute
   ScansioneRoute: typeof ScansioneRoute
@@ -94,6 +112,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accesso': {
+      id: '/accesso'
+      path: '/accesso'
+      fullPath: '/accesso'
+      preLoaderRoute: typeof AccessoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commerciale': {
@@ -123,6 +148,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AccessoRoute: AccessoRoute,
   CommercialeRoute: CommercialeRoute,
   EspositoreRoute: EspositoreRoute,
   ScansioneRoute: ScansioneRoute,
