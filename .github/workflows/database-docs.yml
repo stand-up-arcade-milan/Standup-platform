@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 15
     env:
       POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_APP_PASSWORD: ci-only-app-password
       DSN: postgresql://arcade_admin:ci-only-password@127.0.0.1:5432/arcade
     steps:
       - uses: actions/checkout@v7
@@ -49,6 +50,7 @@ jobs:
           docker run -d --name arcade-ci \
             -e POSTGRES_USER=arcade_admin \
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_APP_PASSWORD="$POSTGRES_APP_PASSWORD" \
             -e POSTGRES_DB=arcade \
             -p 127.0.0.1:5432:5432 arcade-db:ci
           # Durante l'inizializzazione l'entrypoint avvia un server temporaneo che ascolta
