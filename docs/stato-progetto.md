@@ -90,7 +90,7 @@ npx --yes @redocly/cli@2.64.1 lint --extends minimal docs/openapi.yaml
 
 La CI esegue anche Compose smoke test: `docker compose config --quiet`, build delle immagini e richieste a `/api/v1/health` e `/actuator/health` passando dal frontend.
 
-Esiti di verifica registrati per questa implementazione: `bun run build`, `mvn -B -ntp verify` e lint OpenAPI sono passati; Maven segnala che al momento non ci sono test Java automatici. Newman ha eseguito gli 8 casi della collection con 25 asserzioni superate. I cinque export sono stati inoltre richiesti con dati importati: JSON valido, campi personali assenti, fingerprint HMAC di 64 caratteri e `flagQualita` come array. La UI delle route implementate e' stata verificata con browser headless.
+Esiti di verifica registrati per questa implementazione: `bun run build`, `mvn -B -ntp verify` e lint OpenAPI sono passati. Maven esegue ora 10 test automatici Java (JWT e ruoli, formato errori, health pubblico, export pseudonimizzato, array PostgreSQL e idempotenza KPI); tutti passano e la CI li lancia nel job backend con `mvn verify`. Newman ha eseguito gli 8 casi della collection con 25 asserzioni superate. I cinque export sono stati inoltre richiesti con dati importati: JSON valido, campi personali assenti, fingerprint HMAC di 64 caratteri e `flagQualita` come array. La UI delle route implementate e' stata verificata con browser headless.
 
 ### Collection Postman BID-BAD
 
