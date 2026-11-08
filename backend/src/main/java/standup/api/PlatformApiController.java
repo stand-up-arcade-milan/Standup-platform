@@ -3,6 +3,7 @@ package standup.api;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,11 +36,21 @@ import org.postgresql.util.PGobject;
 public class PlatformApiController {
     private final JdbcTemplate db;
     private final ApiTokens tokens;
+    private final LoginRateLimiter loginRateLimiter;
+    private final CommercialDocumentService commercialDocuments;
     private final SecureRandom random = new SecureRandom();
 
-    public PlatformApiController(JdbcTemplate db, ApiTokens tokens) {
+    @Autowired
+    public PlatformApiController(JdbcTemplate db, ApiTokens tokens, LoginRateLimiter loginRateLimiter,
+            CommercialDocumentService commercialDocuments) {
         this.db = db;
         this.tokens = tokens;
+        this.loginRateLimiter = loginRateLimiter;
+        this.commercialDocuments = commercialDocuments;
+    }
+
+    PlatformApiController(JdbcTemplate db, ApiTokens tokens) {
+        this(db, tokens, new LoginRateLimiter(), new CommercialDocumentService());
     }
 
     @Transactional
@@ -50,10 +62,25 @@ public class PlatformApiController {
         String method = request.getMethod();
         Map<String, Object> input = body == null ? Map.of() : body;
         try {
+            boolean health = path.equals("/health");
+            if (!health) db.execute("SET LOCAL ROLE arcade_api");
             authorize(path, method, request);
+            String databaseRole = databaseRole(path, method, request);
+            Map<String, Object> actor = actorClaims(request);
+            if ("arcade_espositore".equals(databaseRole)) {
+                Object exhibitorId = actor.get("idEspositore");
+                if (!(exhibitorId instanceof String id) || id.isBlank()) {
+                    throw new ApiFailure(403, "ESPOSITORE_NON_ASSOCIATO", "The exhibitor token has no exhibitor identifier.");
+                }
+                db.queryForObject("SELECT set_config('arcade.id_espositore', ?, true)", String.class, id);
+            }
+            if (!health && !"arcade_api".equals(databaseRole)) {
+                db.execute("SET LOCAL ROLE " + databaseRole);
+            }
             Object result = execute(path, method, request, input);
-            if (result instanceof ResponseEntity<?> response) return response;
             int status = status(method, path, result);
+            auditSuccess(path, method, actor, databaseRole);
+            if (result instanceof ResponseEntity<?> response) return response;
             Object shaped = camelize(result);
             return result == null ? ResponseEntity.status(status).build() : ResponseEntity.status(status).body(shaped);
         } catch (ApiFailure failure) {
@@ -77,17 +104,86 @@ public class PlatformApiController {
         return 200;
     }
 
+    /** Selects a fixed database role after HTTP authorization; never derived from request text. */
+    private String databaseRole(String path, String method, HttpServletRequest request) {
+        if (path.startsWith("/auth/")) return "arcade_autenticazione";
+        if (path.equals("/visitatori/registrazioni") || path.matches("/visitatori/registrazioni/[^/]+/consensi")) return "arcade_registrazione";
+        if (path.startsWith("/richieste/") && "POST".equals(method)) return "arcade_scrittura_pubblica";
+        if (path.equals("/richieste") && "GET".equals(method)) return "arcade_dati_personali";
+        if (path.startsWith("/bi/dati/") || path.startsWith("/integrazioni/bad/")) return "arcade_bad";
+        if (path.equals("/accessi") || path.equals("/scansioni") || path.startsWith("/pedane/")
+                || path.startsWith("/sensori-ai/") || path.equals("/rilevazioni/peso")) return "arcade_dispositivo";
+        if (path.equals("/admin/audit") && "GET".equals(method)) return "arcade_audit_reader";
+
+        Map<String, Object> claims = actorClaims(request);
+        boolean exhibitor = "ESPOSITORE".equals(claims.get("role"));
+        if (exhibitor && (path.startsWith("/espositori/me") || path.equals("/stand")
+                || path.matches("/pratiche/[0-9a-fA-F-]{36}/documenti(?:/[0-9a-fA-F-]{36}/download)?"))) return "arcade_espositore";
+
+        if (path.equals("/edizioni") || path.equals("/padiglioni")
+                || (path.equals("/mappa") && !Boolean.parseBoolean(request.getParameter("includiAffollamento")))
+                || path.equals("/espositori") || path.equals("/espositori/categorie")
+                || (path.matches("/espositori/[^/]+$") && !path.equals("/espositori/me"))
+                || (path.equals("/lead-magnet") && "GET".equals(method))
+                || (path.equals("/avvisi") && "GET".equals(method)
+                    && "VISITATORI".equals(request.getParameter("pubblico")))) return "arcade_pubblico";
+        return "arcade_api";
+    }
+
+    private Map<String, Object> actorClaims(HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null || authorization.isBlank()
+                || !authorization.toLowerCase(java.util.Locale.ROOT).startsWith("bearer ")) return Map.of();
+        return tokens.authenticate(request, "ESPOSITORE", "COMMERCIALE", "STAFF", "AMMINISTRATORE", "DIREZIONE", "DEVICE", "BAD");
+    }
+
+    private void auditSuccess(String path, String method, Map<String, Object> actor, String restoreRole) {
+        if (!audited(path, method)) return;
+        String subject = actor.get("sub") instanceof String value ? value : null;
+        String role = actor.get("role") instanceof String value ? value : "PUBBLICO";
+        String actorRef = subject == null ? null : tokens.fingerprint("audit|" + subject);
+        db.execute("SET LOCAL ROLE arcade_audit_writer");
+        db.update("INSERT INTO arcade.audit_event(actor_ref,actor_role,action,resource) VALUES(?,?,?,?)",
+                actorRef, role, method, auditResource(path));
+        db.execute("SET LOCAL ROLE " + restoreRole);
+    }
+
+    private boolean audited(String path, String method) {
+        return path.startsWith("/admin/") || path.startsWith("/auth/")
+                || path.equals("/richieste") || path.startsWith("/richieste/")
+                || path.startsWith("/visitatori/registrazioni")
+                || path.startsWith("/espositori/me") || path.startsWith("/pratiche/")
+                || path.equals("/pratiche") || path.equals("/accessi") || path.equals("/scansioni")
+                || path.startsWith("/bi/dati/") || path.startsWith("/integrazioni/bad/");
+    }
+
+    private String auditResource(String path) {
+        if (path.matches("/pratiche/[0-9a-fA-F-]{36}/documenti/[0-9a-fA-F-]{36}/download")) {
+            return "/pratiche/{id}/documenti/{id}/download";
+        }
+        if (path.matches("/pratiche/[0-9a-fA-F-]{36}.*")) return path.replaceFirst("/pratiche/[0-9a-fA-F-]{36}", "/pratiche/{id}");
+        if (path.matches("/avvisi/[0-9a-fA-F-]{36}")) return "/avvisi/{id}";
+        if (path.matches("/visitatori/registrazioni/[^/]+/consensi")) return "/visitatori/registrazioni/{id}/consensi";
+        return path;
+    }
+
     private void authorize(String path, String method, HttpServletRequest request) {
-        if (path.equals("/health") || path.equals("/edizioni") || path.equals("/padiglioni") || path.equals("/mappa")
+        if (path.equals("/health") || path.equals("/edizioni") || path.equals("/padiglioni")
                 || path.equals("/espositori") || path.equals("/espositori/categorie") || (path.matches("/espositori/[^/]+$") && !path.equals("/espositori/me"))
                 || path.startsWith("/richieste/espositore") || path.startsWith("/richieste/visitatore")
                 || path.equals("/visitatori/registrazioni") || path.matches("/visitatori/registrazioni/[^/]+/consensi") || path.startsWith("/auth/")) return;
+        if (path.equals("/mappa")) {
+            if (Boolean.parseBoolean(request.getParameter("includiAffollamento"))) {
+            tokens.authenticate(request, "DIREZIONE", "AMMINISTRATORE");
+            }
+            return;
+        }
         if (path.equals("/stand")) { tokens.authenticate(request, "COMMERCIALE", "STAFF", "AMMINISTRATORE", "ESPOSITORE"); return; }
         if (path.equals("/listino")) { tokens.authenticate(request, "COMMERCIALE", "AMMINISTRATORE"); return; }
         if (path.startsWith("/espositori/me")) { tokens.authenticate(request, "ESPOSITORE"); return; }
         if (path.equals("/richieste") || path.equals("/pratiche")) { tokens.authenticate(request,"COMMERCIALE","AMMINISTRATORE"); return; }
         if (path.startsWith("/pratiche/")) {
-            if("GET".equals(method)&&path.matches("/pratiche/[0-9a-fA-F-]{36}/documenti")) {
+            if("GET".equals(method)&&path.matches("/pratiche/[0-9a-fA-F-]{36}/documenti(?:/[0-9a-fA-F-]{36}/download)?")) {
                 Map<String,Object> claims=tokens.authenticate(request,"COMMERCIALE","AMMINISTRATORE","ESPOSITORE");
                 if("ESPOSITORE".equals(claims.get("role"))) assertPracticeOwner(path.split("/")[2],claims);
             } else tokens.authenticate(request,"COMMERCIALE","AMMINISTRATORE");
@@ -96,7 +192,9 @@ public class PlatformApiController {
         if (path.equals("/accessi")) { tokens.authenticate(request, "DEVICE", "STAFF", "AMMINISTRATORE"); return; }
         if (path.equals("/scansioni")) { tokens.authenticate(request, "DEVICE", "STAFF", "ESPOSITORE"); return; }
         if (path.startsWith("/pedane/") || path.startsWith("/sensori-ai/") || path.equals("/rilevazioni/peso")) { tokens.authenticate(request, "DEVICE"); return; }
-        if (path.equals("/lead-magnet") && "GET".equals(method)) return;
+        if (path.equals("/lead-magnet") && "GET".equals(method)) {
+            return;
+        }
         if (path.equals("/lead-magnet")) { tokens.authenticate(request, "COMMERCIALE", "AMMINISTRATORE"); return; }
         if (path.equals("/avvisi") && "GET".equals(method)) {
             String audience=request.getParameter("pubblico");
@@ -120,6 +218,7 @@ public class PlatformApiController {
 
     private Object execute(String p, String m, HttpServletRequest r, Map<String, Object> b) {
         if (p.equals("/health")) return map("service", "standup-platform-api", "status", "UP");
+        if (p.equals("/admin/audit") && m.equals("GET")) return auditEvents(r);
         if (p.equals("/edizioni") && m.equals("GET")) return items(db.queryForList("SELECT anno, sede, inizio_vendite, inizio_fiera, fine_fiera, stato FROM arcade.edizione WHERE (?::boolean IS NULL OR (? AND stato='ATTIVA') OR (NOT ? AND stato<>'ATTIVA')) ORDER BY anno DESC", bool(r, "attiva"), bool(r, "attiva"), bool(r, "attiva")));
         if (p.equals("/padiglioni") && m.equals("GET")) return padiglioni(edition(r));
         if (p.equals("/stand") && m.equals("GET")) return stand(r);
@@ -136,7 +235,7 @@ public class PlatformApiController {
         if (p.equals("/richieste/visitatore") && m.equals("POST")) return createRichiestaVisitatore(b);
         if (p.equals("/visitatori/registrazioni") && m.equals("POST")) return createRegistrazione(b);
         if (p.matches("/visitatori/registrazioni/[^/]+/consensi") && m.equals("PATCH")) return updateConsensi(p, b);
-        if (p.equals("/auth/login") && m.equals("POST")) return login(b);
+        if (p.equals("/auth/login") && m.equals("POST")) return login(r,b);
         if (p.equals("/auth/invito/accetta") && m.equals("POST")) return acceptInvite(b);
         if (p.equals("/auth/password/recupero") && m.equals("POST")) return requestRecovery(b);
         if (p.equals("/auth/password/reimposta") && m.equals("POST")) return resetPassword(b);
@@ -146,6 +245,7 @@ public class PlatformApiController {
         if (p.matches("/pratiche/[^/]+$")) return pratica(p.substring(p.lastIndexOf('/') + 1), m, b);
         if (p.matches("/pratiche/[^/]+/stato") && m.equals("PATCH")) return updateStato(p, b);
         if (p.matches("/pratiche/[^/]+/offerta") && m.equals("POST")) return createOfferta(p, b);
+        if (p.matches("/pratiche/[^/]+/documenti/[^/]+/download") && m.equals("GET")) return downloadDocument(p);
         if (p.matches("/pratiche/[^/]+/documenti") && m.equals("GET")) return documenti(p);
         if (p.matches("/pratiche/[^/]+/acconti") && m.equals("POST")) return createAcconto(p, b);
         if (p.matches("/pratiche/[^/]+/rinnovo") && m.equals("POST")) return rinnovo(p);
@@ -214,7 +314,7 @@ public class PlatformApiController {
                     "varchi",pavilion.get("varchi")));
         }
         boolean crowd = Boolean.parseBoolean(r.getParameter("includiAffollamento"));
-        List<Map<String, Object>> density = crowd ? db.queryForList("SELECT k.codice,k.valore,k.unita,l.anno AS edizione,k.periodo_dal,k.periodo_al,k.dimensioni,k.fonte,k.qualita,k.flag_qualita,k.stimato,k.simulato,k.nota,l.calcolato_il,l.formula_versione FROM arcade.lotto_kpi l JOIN arcade.kpi_osservazione k USING(batch_id) WHERE l.anno=? AND k.codice='saturazione_pct' ORDER BY l.calcolato_il DESC", year) : List.of();
+        List<Map<String, Object>> density = crowd ? db.queryForList("SELECT codice,valore,unita,edizione,periodo_dal,periodo_al,dimensioni,fonte,qualita,flag_qualita,stimato,simulato,nota,calcolato_il,formula_versione FROM arcade.v_mappa_affollamento WHERE edizione=? ORDER BY calcolato_il DESC", year) : List.of();
         return map("edizione", year, "padiglioni", mapAreas, "affollamento", density);
     }
 
@@ -262,14 +362,14 @@ public class PlatformApiController {
         if (contract == null) throw new ApiFailure(404, "CONTRATTO_NON_TROVATO", "Nessun contratto disponibile per l'edizione.");
         Object practiceId = contract.remove("id_pratica");
         contract.put("acconti", db.queryForList("SELECT id_acconto AS id,importo_eur,ricevuto_il,riferimento FROM arcade.acconto WHERE id_pratica=? ORDER BY ricevuto_il", practiceId));
-        contract.put("documenti", db.queryForList("SELECT id_documento AS id,tipo,nome,url,creato_il FROM arcade.documento_pratica WHERE id_pratica=? ORDER BY creato_il DESC", practiceId));
+        contract.put("documenti", commercialDocumentRows((UUID) practiceId));
         return contract;
     }
 
     private Object contatti(HttpServletRequest r, int year) {
         String id = String.valueOf(tokens.authenticate(r, "ESPOSITORE").get("idEspositore"));
         int limit = limit(r), offset = cursor(r);
-        return page(db.queryForList("SELECT c.id_contatto AS id,c.anno,c.codice_stand,c.raccolto_il,c.fascia_eta,c.provincia,c.interesse,c.consenso_marketing,c.utilizzabile_marketing,c.consenso_espositori,CASE WHEN c.consenso_espositori THEN r.email ELSE NULL END AS email FROM arcade.contatto_stand c LEFT JOIN arcade.contatto_riservato r USING(id_contatto) WHERE c.anno=? AND c.id_espositore=? ORDER BY c.raccolto_il DESC LIMIT ? OFFSET ?", year, id, limit + 1, offset), limit, offset);
+        return page(db.queryForList("SELECT c.id_contatto AS id,c.anno,c.codice_stand,c.raccolto_il,c.interesse,c.id_lead_magnet,r.email FROM arcade.contatto_stand c JOIN arcade.contatto_riservato r USING(id_contatto) WHERE c.anno=? AND c.id_espositore=? AND c.consenso_espositori AND c.consenso_marketing='SI' AND c.utilizzabile_marketing AND c.fascia_eta IN ('18-24','25-34','35-44','45+') AND c.motivo_esclusione='NESSUNO' AND (c.anno<2026 OR c.id_lead_magnet IS NOT NULL) ORDER BY c.raccolto_il DESC LIMIT ? OFFSET ?", year, id, limit + 1, offset), limit, offset);
     }
 
     private Object presenzePeso(HttpServletRequest r, int year) {
@@ -308,6 +408,7 @@ public class PlatformApiController {
 
     private Object createRichiestaEspositore(Map<String, Object> b) {
         require(b, "azienda", "referente", "email", "categoria", "metriQuadriDesiderati", "consensoPrivacy");
+        if (!boolValue(b, "consensoPrivacy")) throw new ApiFailure(400, "CONSENSO_PRIVACY_RICHIESTO", "La richiesta commerciale richiede il consenso privacy.");
         UUID id = db.queryForObject("INSERT INTO arcade.richiesta(tipo,azienda,categoria,metri_quadri_desiderati,note,consenso_privacy) VALUES('ESPOSITORE',?,?,?,?,?) RETURNING id_richiesta", UUID.class, text(b,"azienda"), text(b,"categoria"), decimal(b,"metriQuadriDesiderati"), textOrNull(b,"note"), boolValue(b,"consensoPrivacy"));
         db.update("INSERT INTO arcade.richiesta_riservata(id_richiesta,referente,email) VALUES(?,?,?)", id, text(b,"referente"), text(b,"email"));
         return map("id", id, "stato", "NUOVA", "createdAt", Instant.now().toString());
@@ -337,21 +438,34 @@ public class PlatformApiController {
 
     private Object updateConsensi(String p, Map<String, Object> b) {
         require(b,"tokenRevoca");
+        if (!b.containsKey("consensoMarketing") && !b.containsKey("consensoEspositori")) {
+            throw new ApiFailure(400,"CONSENSO_NON_SPECIFICATO","Specificare almeno un consenso da aggiornare.");
+        }
         String id = p.split("/")[3];
-        int changed = db.update("UPDATE arcade.registrazione_visitatore r SET consenso_marketing=?,consenso_espositori=?,consensi_aggiornati_il=now() FROM arcade.revoca_registrazione_visitatore t WHERE r.id_registrazione=? AND t.id_registrazione=r.id_registrazione AND t.token_hash=? AND t.usato_il IS NULL", boolValue(b,"consensoMarketing"), boolValue(b,"consensoEspositori"), Long.valueOf(id), tokens.hash(text(b,"tokenRevoca")));
+        Boolean marketing = b.containsKey("consensoMarketing") ? boolValue(b,"consensoMarketing") : null;
+        Boolean exhibitors = b.containsKey("consensoEspositori") ? boolValue(b,"consensoEspositori") : null;
+        int changed = db.update("UPDATE arcade.registrazione_visitatore r SET consenso_marketing=coalesce(?,r.consenso_marketing),consenso_espositori=coalesce(?,r.consenso_espositori),consensi_aggiornati_il=now() FROM arcade.revoca_registrazione_visitatore t WHERE r.id_registrazione=? AND t.id_registrazione=r.id_registrazione AND t.token_hash=? AND t.usato_il IS NULL", marketing, exhibitors, Long.valueOf(id), tokens.hash(text(b,"tokenRevoca")));
         if (changed == 0) throw new ApiFailure(404,"TOKEN_REVOCA_NON_VALIDO","Token di revoca non valido o registrazione non trovata.");
         Map<String,Object> row=one("UPDATE arcade.registrazione_visitatore SET consensi_aggiornati_il=now() WHERE id_registrazione=? RETURNING consenso_marketing,consenso_espositori,consensi_aggiornati_il,profilabile",Long.valueOf(id));
         db.update("UPDATE arcade.revoca_registrazione_visitatore SET usato_il=now() WHERE token_hash=?",tokens.hash(text(b,"tokenRevoca")));
         return row;
     }
 
-    private Object login(Map<String, Object> b) {
+    private Object login(HttpServletRequest request, Map<String, Object> b) {
         require(b,"email","password");
-        Map<String,Object> account=oneOrNull("SELECT a.id_espositore,a.password_hash,a.attivo FROM arcade.account_espositore a WHERE lower(a.email)=lower(?)", text(b,"email"));
-        if (account==null || !Boolean.TRUE.equals(account.get("attivo")) || !verifyPassword(text(b,"password"),String.valueOf(account.get("password_hash")))) throw new ApiFailure(401,"CREDENZIALI_NON_VALIDE","Email o password non valide.");
+        String email=text(b,"email").trim();
+        if(email.length()>320) throw new ApiFailure(400,"EMAIL_NON_VALIDA","L’indirizzo email supera il limite consentito.");
+        String rateKey=tokens.fingerprint("login-rate|"+request.getRemoteAddr()+"|"+email.toLowerCase(java.util.Locale.ROOT));
+        if(loginRateLimiter.blocked(rateKey)) throw new ApiFailure(429,"TROPPI_TENTATIVI","Troppi tentativi. Riprova più tardi.");
+        Map<String,Object> account=oneOrNull("SELECT a.id_espositore,a.password_hash,a.attivo FROM arcade.account_espositore a WHERE lower(a.email)=lower(?)", email);
+        if (account==null || !Boolean.TRUE.equals(account.get("attivo")) || !verifyPassword(text(b,"password"),String.valueOf(account.get("password_hash")))) {
+            loginRateLimiter.failed(rateKey);
+            throw new ApiFailure(401,"CREDENZIALI_NON_VALIDE","Email o password non valide.");
+        }
+        loginRateLimiter.succeeded(rateKey);
         String exhibitor=String.valueOf(account.get("id_espositore"));
-        db.update("UPDATE arcade.account_espositore SET ultimo_accesso=now() WHERE lower(email)=lower(?)",text(b,"email"));
-        return tokenResponse(tokens.issue(text(b,"email"),"ESPOSITORE",exhibitor,3600));
+        db.update("UPDATE arcade.account_espositore SET ultimo_accesso=now() WHERE lower(email)=lower(?)",email);
+        return tokenResponse(tokens.issue(email,"ESPOSITORE",exhibitor,3600));
     }
 
     private Object acceptInvite(Map<String, Object> b) {
@@ -385,7 +499,7 @@ public class PlatformApiController {
 
     private Object richieste(HttpServletRequest r) {
         int limit=limit(r),offset=cursor(r);
-        return page(db.queryForList("SELECT id_richiesta AS id,tipo,stato,anno,azienda,categoria,metri_quadri_desiderati,note,consenso_privacy,consenso_marketing,creata_il FROM arcade.richiesta WHERE (?::text IS NULL OR stato=?) ORDER BY creata_il LIMIT ? OFFSET ?",r.getParameter("stato"),r.getParameter("stato"),limit+1,offset),limit,offset);
+        return page(db.queryForList("SELECT q.id_richiesta AS id,q.tipo,q.stato,q.anno,q.azienda,q.categoria,q.metri_quadri_desiderati,q.note,q.consenso_privacy,q.consenso_marketing,q.creata_il,p.referente,p.email FROM arcade.richiesta q LEFT JOIN arcade.richiesta_riservata p USING(id_richiesta) WHERE (?::text IS NULL OR q.stato=?) ORDER BY q.creata_il LIMIT ? OFFSET ?",r.getParameter("stato"),r.getParameter("stato"),limit+1,offset),limit,offset);
     }
 
     private Object pratiche(HttpServletRequest r) {
@@ -451,7 +565,8 @@ public class PlatformApiController {
         String old=String.valueOf(state.get("stato")), next=text(b,"stato");
         Map<String,List<String>> transitions=Map.of("BOZZA",List.of("INVIATA"),"INVIATA",List.of("FIRMATA"),"FIRMATA",List.of("ACCONTO_RICEVUTO"),"ACCONTO_RICEVUTO",List.of());
         if(!transitions.getOrDefault(old,List.of()).contains(next)) throw new ApiFailure(409,"TRANSIZIONE_STATO_NON_VALIDA","Transizione di stato non ammessa.");
-        db.update("UPDATE arcade.pratica SET stato=?,aggiornata_il=now() WHERE id_pratica=?",next,id);
+        db.update("UPDATE arcade.pratica SET stato=?, firmata_il=CASE WHEN ?='FIRMATA' THEN now() ELSE firmata_il END, aggiornata_il=now() WHERE id_pratica=?",next,next,id);
+        if ("FIRMATA".equals(next)) archiveContractSummary(id);
         return practice(id.toString());
     }
 
@@ -464,11 +579,112 @@ public class PlatformApiController {
         BigDecimal discount=decimal(b,"scontoPercentuale");
         if(discount.signum()<0||discount.compareTo(BigDecimal.valueOf(100))>0) throw new ApiFailure(400,"SCONTO_NON_VALIDO","Lo sconto deve essere compreso tra 0 e 100.");
         db.update("UPDATE arcade.pratica SET sconto_percentuale=?,aggiornata_il=now() WHERE id_pratica=?",discount,practice);
-        UUID id=db.queryForObject("INSERT INTO arcade.documento_pratica(id_pratica,tipo,nome,url) VALUES(?,'OFFERTA',?,NULL) RETURNING id_documento",UUID.class,practice,"Offerta " + practice);
-        return one("SELECT id_documento AS id,tipo,nome,url,creato_il FROM arcade.documento_pratica WHERE id_documento=?",id);
+        Map<String,Object> facts = documentFacts(practice);
+        byte[] pdf = commercialDocuments.offer(facts, documentLines(practice), textOrNull(b,"note"));
+        UUID id = saveCommercialDocument(practice, "OFFERTA", "Offerta " + facts.get("edizione") + " - " + practice + ".pdf", pdf);
+        return commercialDocumentRow(id);
     }
 
-    private Object documenti(String p) { UUID id=uuid(p.split("/")[2]); ensurePractice(id); return items(db.queryForList("SELECT id_documento AS id,tipo,nome,url,creato_il FROM arcade.documento_pratica WHERE id_pratica=? ORDER BY creato_il DESC",id)); }
+    private Object documenti(String p) { UUID id=uuid(p.split("/")[2]); ensurePractice(id); return items(commercialDocumentRows(id)); }
+
+    private void archiveContractSummary(UUID practice) {
+        Map<String,Object> facts = documentFacts(practice);
+        byte[] pdf = commercialDocuments.contractSummary(facts, documentLines(practice), documentPayments(practice));
+        saveCommercialDocument(practice, "ALTRO", "Riepilogo pratica firmata - informativo " + practice + ".pdf", pdf);
+    }
+
+    private Map<String,Object> documentFacts(UUID practice) {
+        Map<String,Object> facts = one("""
+                SELECT p.id_pratica AS id_pratica, p.anno AS edizione, p.id_espositore AS id_espositore,
+                       e.ragione_sociale AS ragione_sociale, p.codice_stand AS codice_stand,
+                       s.padiglione AS padiglione, coalesce(ps.superficie_mq,s.superficie_mq) AS superficie_mq,
+                       p.pacchetto AS pacchetto, p.stato AS stato, p.sconto_percentuale AS sconto_percentuale,
+                       v.imponibile_listino_eur AS imponibile_listino_eur, v.totale_eur AS totale_eur,
+                       v.acconti_eur AS acconti_eur, p.firmata_il AS firmata_il
+                  FROM arcade.pratica p
+                  JOIN arcade.espositore e USING(id_espositore)
+                  LEFT JOIN arcade.stand s ON s.codice=p.codice_stand
+                  LEFT JOIN arcade.planimetria_stand ps ON ps.anno=p.anno AND ps.codice_stand=p.codice_stand
+                  LEFT JOIN arcade.v_pratica v USING(id_pratica)
+                 WHERE p.id_pratica=?
+                """, practice);
+        String exhibitorId = String.valueOf(facts.get("id_espositore"));
+        db.execute("SET LOCAL ROLE arcade_dati_personali");
+        Map<String,Object> privateData = oneOrNull("SELECT partita_iva,citta,referente,email_referente FROM arcade.espositore_riservato WHERE id_espositore=?", exhibitorId);
+        db.execute("SET LOCAL ROLE arcade_api");
+        if (privateData != null) facts.putAll(privateData);
+        return facts;
+    }
+
+    private List<Map<String,Object>> documentLines(UUID practice) {
+        List<Map<String,Object>> lines = db.queryForList("""
+                SELECT v.codice_voce, l.descrizione, v.quantita, v.prezzo_unitario_eur,
+                       round(v.quantita * v.prezzo_unitario_eur,2) AS importo_eur
+                  FROM arcade.voce_pratica v
+                  LEFT JOIN arcade.listino_voce l ON l.anno=v.anno AND l.codice_voce=v.codice_voce
+                 WHERE v.id_pratica=? ORDER BY v.codice_voce
+                """, practice);
+        if (!lines.isEmpty()) return lines;
+        return db.queryForList("""
+                SELECT r.codice_voce_sorgente AS codice_voce, r.descrizione, r.quantita,
+                       r.prezzo_unitario_eur, r.importo_eur
+                  FROM arcade.contratto_storico_riga r
+                  JOIN arcade.contratto_storico c USING(id_contratto_origine)
+                 WHERE c.id_pratica=? ORDER BY r.numero_riga
+                """, practice);
+    }
+
+    private List<Map<String,Object>> documentPayments(UUID practice) {
+        return db.queryForList("SELECT importo_eur, ricevuto_il, riferimento FROM arcade.acconto WHERE id_pratica=? ORDER BY ricevuto_il", practice);
+    }
+
+    private UUID saveCommercialDocument(UUID practice, String type, String filename, byte[] bytes) {
+        String sha256;
+        try { sha256 = java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
+        catch (java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException("SHA-256 non disponibile", impossible); }
+        db.execute("SET LOCAL ROLE arcade_api");
+        return db.queryForObject("""
+                INSERT INTO arcade.documento_pratica(id_pratica,tipo,nome,url,mime_type,dimensione_byte,sha256,contenuto_pdf)
+                VALUES(?,?,?,NULL,'application/pdf',?,?,?) RETURNING id_documento
+                """, UUID.class, practice, type, filename, bytes.length, sha256, bytes);
+    }
+
+    private List<Map<String,Object>> commercialDocumentRows(UUID practice) {
+        return db.queryForList("""
+                SELECT id_documento AS id,tipo,nome,url,mime_type,dimensione_byte,sha256,creato_il,
+                       CASE WHEN contenuto_pdf IS NOT NULL THEN '/api/v1/pratiche/'||id_pratica||'/documenti/'||id_documento||'/download' END AS download_url
+                  FROM arcade.documento_pratica WHERE id_pratica=? ORDER BY creato_il DESC
+                """, practice);
+    }
+
+    private Map<String,Object> commercialDocumentRow(UUID document) {
+        return one("""
+                SELECT id_documento AS id,tipo,nome,url,mime_type,dimensione_byte,sha256,creato_il,
+                       CASE WHEN contenuto_pdf IS NOT NULL THEN '/api/v1/pratiche/'||id_pratica||'/documenti/'||id_documento||'/download' END AS download_url
+                  FROM arcade.documento_pratica WHERE id_documento=?
+                """, document);
+    }
+
+    private ResponseEntity<byte[]> downloadDocument(String path) {
+        String[] parts = path.split("/");
+        UUID practice = uuid(parts[2]), document = uuid(parts[4]);
+        Map<String,Object> row = oneOrNull("SELECT nome,mime_type,sha256,contenuto_pdf FROM arcade.documento_pratica WHERE id_documento=? AND id_pratica=?", document, practice);
+        if (row == null) throw new ApiFailure(404,"DOCUMENTO_NON_TROVATO","Documento non trovato.");
+        byte[] content = (byte[]) row.get("contenuto_pdf");
+        if (content == null) throw new ApiFailure(404,"DOCUMENTO_NON_ARCHIVIATO","Il documento e' un collegamento esterno senza copia locale.");
+        return ResponseEntity.ok()
+                .header("Content-Type", String.valueOf(row.get("mime_type")))
+                .header("Content-Disposition", "attachment; filename=\"" + safeFilename(String.valueOf(row.get("nome"))) + "\"")
+                .header("Cache-Control", "private, no-store")
+                .header("X-Content-Type-Options", "nosniff")
+                .header("ETag", "\"" + row.get("sha256") + "\"")
+                .body(content);
+    }
+
+    private String safeFilename(String value) {
+        String cleaned = value.replaceAll("[^A-Za-z0-9._ -]", "_").replace(' ', '_');
+        return cleaned.endsWith(".pdf") ? cleaned : cleaned + ".pdf";
+    }
 
     private Object createAcconto(String p,Map<String,Object>b) {
         require(b,"importoEur","ricevutoIl"); UUID id=uuid(p.split("/")[2]);
@@ -574,27 +790,32 @@ public class PlatformApiController {
         require(b,"eventId","edizione","codiceStand","operatoreId","rilevataIl");
         String event=text(b,"eventId"), booth=text(b,"codiceStand"), rawTicket=textOrNull(b,"ticketRef");
         String ticket=rawTicket==null?null:tokens.fingerprint(rawTicket);
-        if(Boolean.TRUE.equals(b.get("consensoEspositori"))&&textOrNull(b,"email")==null) throw new ApiFailure(400,"EMAIL_RICHIESTA_PER_CONSENSO","Il consenso alla condivisione richiede l’email del visitatore.");
-        Map<String,Object> prior=oneOrNull("SELECT id_evento,anno,codice_stand,ticket_ref,duplicata FROM arcade.scansione_stand WHERE id_evento=?",event);
+        boolean marketingConsent=Boolean.TRUE.equals(b.get("consensoMarketing"));
+        String ageBand=textOrNull(b,"fasciaEta");
+        boolean adult=ageBand!=null&&Set.of("18-24","25-34","35-44","45+").contains(ageBand);
+        Long requestedLead=b.get("idLeadMagnet")==null?null:Long.valueOf(String.valueOf(b.get("idLeadMagnet")));
+        if(marketingConsent&&(!Boolean.TRUE.equals(b.get("consensoEspositori"))||!adult||requestedLead==null||textOrNull(b,"email")==null))
+            throw new ApiFailure(400,"LEAD_NON_IDONEO","Condividere un lead richiede email, consenso marketing, consenso all’espositore, fascia adulta e lead magnet.");
+        Map<String,Object> prior=oneOrNull("SELECT id_evento,anno,codice_stand,ticket_ref,id_contatto,duplicata FROM arcade.scansione_stand WHERE id_evento=?",event);
         if(prior!=null) {
             boolean sameTicket=java.util.Objects.equals(prior.get("ticket_ref"),ticket)||java.util.Objects.equals(prior.get("ticket_ref"),rawTicket);
             if(((Number)prior.get("anno")).intValue()!=number(b,"edizione")||!java.util.Objects.equals(String.valueOf(prior.get("codice_stand")),booth)||!sameTicket) throw new ApiFailure(409,"EVENT_ID_RIUTILIZZATO","L’eventId è già associato a un’altra scansione.");
             Integer previousTotal=db.queryForObject("SELECT count(*) FROM arcade.scansione_stand WHERE anno=? AND codice_stand=? AND NOT duplicata",Integer.class,number(b,"edizione"),booth);
             boolean wasDuplicate=Boolean.TRUE.equals(prior.get("duplicata"));
-            return ResponseEntity.ok(map("eventId",event,"accettata",!wasDuplicate,"duplicata",wasDuplicate,"conteggioStand",previousTotal,"messaggio","Scansione già registrata."));
+            return ResponseEntity.ok(map("eventId",event,"accettata",!wasDuplicate,"duplicata",wasDuplicate,"conteggioStand",previousTotal,"leadAcquisito",prior.get("id_contatto")!=null,"messaggio","Scansione già registrata."));
         }
         if(r.getHeader("Authorization")!=null) {
             Map<String,Object> claims=tokens.authenticate(r,"DEVICE","STAFF","ESPOSITORE");
             if("ESPOSITORE".equals(claims.get("role"))&&db.queryForObject("SELECT count(*) FROM arcade.assegnazione_stand WHERE anno=? AND codice_stand=? AND id_espositore=?",Integer.class,number(b,"edizione"),booth,claims.get("idEspositore"))==0) throw new ApiFailure(403,"STAND_NON_AUTORIZZATO","L'espositore non è autorizzato a scansionare questo stand.");
         }
         boolean duplicate=ticket!=null&&db.queryForObject("SELECT count(*) FROM arcade.scansione_stand WHERE anno=? AND codice_stand=? AND ticket_ref IN (?,?) AND ticket_ref IS NOT NULL AND NOT duplicata",Integer.class,number(b,"edizione"),booth,ticket,rawTicket)>0;
-        Long leadId=b.get("idLeadMagnet")==null?null:Long.valueOf(String.valueOf(b.get("idLeadMagnet")));
-        if(leadId!=null && db.queryForObject("SELECT count(*) FROM arcade.lead_magnet WHERE id_lead_magnet=? AND anno=? AND attivo",Integer.class,leadId,number(b,"edizione"))==0) throw new ApiFailure(400,"LEAD_MAGNET_NON_VALIDO","Lead magnet non attivo per l'edizione.");
+        Long leadId=requestedLead;
+        if(leadId!=null && db.queryForObject("SELECT count(*) FROM arcade.lead_magnet l WHERE l.id_lead_magnet=? AND l.anno=? AND l.attivo AND (l.id_espositore IS NULL OR EXISTS (SELECT 1 FROM arcade.assegnazione_stand a WHERE a.anno=l.anno AND a.id_espositore=l.id_espositore AND a.codice_stand=?))",Integer.class,leadId,number(b,"edizione"),booth)==0) throw new ApiFailure(400,"LEAD_MAGNET_NON_VALIDO","Lead magnet non attivo o non associato allo stand.");
         String contactId=null;
-        if(!duplicate && Boolean.TRUE.equals(b.get("consensoEspositori")) && textOrNull(b,"email")!=null) contactId=saveScannedContact(b,booth);
+        if(!duplicate && marketingConsent && Boolean.TRUE.equals(b.get("consensoEspositori")) && adult && leadId!=null && textOrNull(b,"email")!=null) contactId=saveScannedContact(b,booth);
         db.update("INSERT INTO arcade.scansione_stand(id_evento,anno,codice_stand,operatore_id,rilevata_il,ticket_ref,id_contatto,id_lead_magnet,duplicata) VALUES(?,?,?,?,?,?,?,?,?)",event,number(b,"edizione"),booth,text(b,"operatoreId"),timestamp(b,"rilevataIl"),ticket,contactId,leadId,duplicate);
         Integer total=db.queryForObject("SELECT count(*) FROM arcade.scansione_stand WHERE anno=? AND codice_stand=? AND NOT duplicata",Integer.class,number(b,"edizione"),booth);
-        return map("eventId",event,"accettata",!duplicate,"duplicata",duplicate,"conteggioStand",total,"messaggio",duplicate?"Scansione già registrata.":"Scansione acquisita.");
+        return map("eventId",event,"accettata",!duplicate,"duplicata",duplicate,"conteggioStand",total,"leadAcquisito",contactId!=null,"messaggio",duplicate?"Scansione già registrata.":"Scansione acquisita.");
     }
 
     private String saveScannedContact(Map<String,Object>b,String booth) {
@@ -604,7 +825,7 @@ public class PlatformApiController {
         String email=text(b,"email");
         Long leadId=b.get("idLeadMagnet")==null?null:Long.valueOf(String.valueOf(b.get("idLeadMagnet")));
         String interest=leadId==null?"EVENTO":one("SELECT interesse FROM arcade.lead_magnet WHERE id_lead_magnet=?",leadId).get("interesse").toString();
-        db.update("INSERT INTO arcade.contatto_stand(id_contatto,id_evento,anno,codice_stand,id_espositore,raccolto_il,interesse,consenso_marketing,utilizzabile_marketing,motivo_esclusione,consenso_espositori,id_lead_magnet) VALUES(?,?,?,?,?,?,?, 'NO',false,'CONSENSO_MANCANTE',true,?)",contactId,eventIdFor(contactId),number(b,"edizione"),booth,assignment.get("id_espositore"),timestamp(b,"rilevataIl"),interest,leadId);
+        db.update("INSERT INTO arcade.contatto_stand(id_contatto,id_evento,anno,codice_stand,id_espositore,raccolto_il,fascia_eta,interesse,consenso_marketing,utilizzabile_marketing,motivo_esclusione,consenso_espositori,id_lead_magnet) VALUES(?,?,?,?,?,?,?,?, 'SI',true,'NESSUNO',true,?)",contactId,eventIdFor(contactId),number(b,"edizione"),booth,assignment.get("id_espositore"),timestamp(b,"rilevataIl"),text(b,"fasciaEta"),interest,leadId);
         db.update("INSERT INTO arcade.contatto_riservato(id_contatto,email) VALUES(?,?)",contactId,email);
         return contactId;
     }
@@ -646,7 +867,16 @@ public class PlatformApiController {
         return value;
     }
 
-    private Object leadMagnets(HttpServletRequest r) { int year=edition(r); String exhibitor=r.getParameter("idEspositore"); return items(db.queryForList("SELECT id_lead_magnet AS id,anno AS edizione,id_espositore,tipo,titolo,interesse,attivo FROM arcade.lead_magnet WHERE anno=? AND (?::text IS NULL OR id_espositore=?) ORDER BY titolo",year,exhibitor,exhibitor)); }
+    private Object leadMagnets(HttpServletRequest r) {
+        int year=edition(r); String stand=r.getParameter("stand");
+        if (r.getParameter("idEspositore") != null) throw new ApiFailure(400,"FILTRO_LEAD_MAGNET_NON_VALIDO","Usare il codice stand; gli identificativi degli espositori non sono un filtro pubblico.");
+        return items(db.queryForList("SELECT id_lead_magnet AS id,anno AS edizione,codice_stand AS stand,tipo,titolo,interesse FROM arcade.v_lead_magnet_pubblici WHERE anno=? AND ((?::text IS NULL AND codice_stand IS NULL) OR (?::text IS NOT NULL AND (codice_stand IS NULL OR codice_stand=?))) ORDER BY codice_stand NULLS FIRST,titolo",year,stand,stand,stand));
+    }
+
+    private Object auditEvents(HttpServletRequest r) {
+        int limit=limit(r), offset=cursor(r);
+        return page(db.queryForList("SELECT event_id,occurred_at,actor_ref,actor_role,action,resource FROM arcade.audit_event ORDER BY occurred_at DESC,event_id DESC LIMIT ? OFFSET ?",limit+1,offset),limit,offset);
+    }
     private Object createLeadMagnet(Map<String,Object>b) { require(b,"edizione","tipo","titolo","interesse"); Long id=db.queryForObject("INSERT INTO arcade.lead_magnet(anno,id_espositore,tipo,titolo,interesse,attivo) VALUES(?,?,?,?,?,?) RETURNING id_lead_magnet",Long.class,number(b,"edizione"),textOrNull(b,"idEspositore"),text(b,"tipo"),text(b,"titolo"),text(b,"interesse"),b.getOrDefault("attivo",true)); return one("SELECT id_lead_magnet AS id,anno AS edizione,id_espositore,tipo,titolo,interesse,attivo FROM arcade.lead_magnet WHERE id_lead_magnet=?",id); }
 
     private Object kpi(String p,HttpServletRequest r) {
@@ -665,6 +895,7 @@ public class PlatformApiController {
         String dimensionKey="stand".equals(filter)?"codiceStand":"idEspositore";
         Timestamp from=timeParameter(r.getParameter("dal"),false), to=timeParameter(r.getParameter("al"),true);
         String pavilion=r.getParameter("padiglione");
+        String source=r.getParameter("fonte");
         String codeClause=switch(p) {
             case "/kpi/affluenza" -> " AND k.codice IN ('ingressi_effettivi','picco_presenza','saturazione_pct')";
             case "/kpi/lead-magnet" -> " AND k.codice IN ('mql','interesse_pubblico','resa_lead_magnet')";
@@ -679,7 +910,8 @@ public class PlatformApiController {
                   AND (?::timestamptz IS NULL OR coalesce(k.periodo_al,l.calcolato_il)>=?)
                   AND (?::timestamptz IS NULL OR coalesce(k.periodo_dal,l.calcolato_il)<=?)
                   AND (?::text IS NULL OR k.dimensioni->>'padiglione'=? )
-                """+codeClause+" ORDER BY k.codice,k.periodo_dal NULLS FIRST",year,filterType,dimensionKey,key,dimensionKey.equals("codiceStand")?"codice_stand":dimensionKey,key,from,from,to,to,pavilion,pavilion);
+                  AND (?::text IS NULL OR ? = ANY(k.fonte))
+                """+codeClause+" ORDER BY k.codice,k.periodo_dal NULLS FIRST",year,filterType,dimensionKey,key,dimensionKey.equals("codiceStand")?"codice_stand":dimensionKey,key,from,from,to,to,pavilion,pavilion,source,source);
         return map("edizione",year,"items",rows);
     }
 
@@ -688,15 +920,29 @@ public class PlatformApiController {
     private Object updateAvviso(String p,Map<String,Object>b) { UUID id=uuid(p.substring("/avvisi/".length())); int n=db.update("UPDATE arcade.avviso SET titolo=coalesce(?,titolo),testo=coalesce(?,testo),pubblico=coalesce(?,pubblico),pubblicato_il=coalesce(?::timestamptz,pubblicato_il),attivo=coalesce(?::boolean,attivo) WHERE id_avviso=?",b.get("titolo"),b.get("testo"),b.get("pubblico"),b.get("pubblicatoIl"),b.get("attivo"),id); if(n==0) throw notFound("Avviso"); return one("SELECT id_avviso AS id,titolo,testo,pubblico,pubblicato_il,attivo FROM arcade.avviso WHERE id_avviso=?",id); }
 
     private Object putEdizione(String p,Map<String,Object>b) { int year=Integer.parseInt(p.substring("/admin/edizioni/".length())); require(b,"stato"); int n=db.update("INSERT INTO arcade.edizione(anno,sede,inizio_vendite,inizio_fiera,fine_fiera,stato) VALUES(?,?,?,?,?,?) ON CONFLICT(anno) DO UPDATE SET sede=excluded.sede,inizio_vendite=excluded.inizio_vendite,inizio_fiera=excluded.inizio_fiera,fine_fiera=excluded.fine_fiera,stato=excluded.stato",year,textOrNull(b,"sede"),textOrNull(b,"inizioVendite"),textOrNull(b,"inizioFiera"),textOrNull(b,"fineFiera"),text(b,"stato")); return one("SELECT anno,sede,inizio_vendite,inizio_fiera,fine_fiera,stato FROM arcade.edizione WHERE anno=?",year); }
-    private Object updateParametri(String p,Map<String,Object>b) { int year=Integer.parseInt(p.split("/")[3]); db.update("INSERT INTO arcade.parametri_stima(anno,ore_permanenza,peso_medio_kg,soglia_rumore_kg,persone_per_mq) VALUES(?,?,?,?,?) ON CONFLICT(anno) DO UPDATE SET ore_permanenza=coalesce(?,excluded.ore_permanenza),peso_medio_kg=coalesce(?,excluded.peso_medio_kg),soglia_rumore_kg=coalesce(?,excluded.soglia_rumore_kg),persone_per_mq=coalesce(?,excluded.persone_per_mq)",year,decimalOrNull(b,"orePermanenza"),decimalOrNull(b,"pesoMedioKg"),decimalOrNull(b,"sogliaRumoreKg"),decimalOrNull(b,"personePerMq"),decimalOrNull(b,"orePermanenza"),decimalOrNull(b,"pesoMedioKg"),decimalOrNull(b,"sogliaRumoreKg"),decimalOrNull(b,"personePerMq")); return one("SELECT anno AS edizione,ore_permanenza,peso_medio_kg,soglia_rumore_kg,persone_per_mq FROM arcade.parametri_stima WHERE anno=?",year); }
+    private Object updateParametri(String p,Map<String,Object>b) {
+        int year=Integer.parseInt(p.split("/")[3]);
+        // Insert only the key first so PostgreSQL applies defaults before a partial PATCH.
+        db.update("INSERT INTO arcade.parametri_stima(anno) VALUES(?) ON CONFLICT(anno) DO NOTHING",year);
+        db.update("""
+                UPDATE arcade.parametri_stima
+                   SET ore_permanenza=coalesce(?,ore_permanenza),
+                       peso_medio_kg=coalesce(?,peso_medio_kg),
+                       soglia_rumore_kg=coalesce(?,soglia_rumore_kg),
+                       persone_per_mq=coalesce(?,persone_per_mq)
+                 WHERE anno=?
+                """,decimalOrNull(b,"orePermanenza"),decimalOrNull(b,"pesoMedioKg"),
+                decimalOrNull(b,"sogliaRumoreKg"),decimalOrNull(b,"personePerMq"),year);
+        return one("SELECT anno AS edizione,ore_permanenza,peso_medio_kg,soglia_rumore_kg,persone_per_mq FROM arcade.parametri_stima WHERE anno=?",year);
+    }
 
     private Object exportBi(String p,HttpServletRequest r) {
         int year=edition(r),limit=limit(r),offset=cursor(r); String source=p.substring("/bi/dati/".length());
         String query=switch(source) {
-            case "vendite" -> "SELECT b.id_evento AS ticket_ref,o.id_ordine AS ordine_ref,b.anno AS edizione,b.categoria,o.canale,b.giorno_valido,b.quantita,b.importo_eur,b.registrato_il,b.flag_qualita FROM arcade.biglietto b JOIN arcade.ordine o USING(id_ordine) WHERE b.anno=? ORDER BY b.registrato_il LIMIT ? OFFSET ?";
-            case "accessi" -> "SELECT a.id_evento,a.codice_biglietto AS raw_ticket_ref,ticket.id_evento AS matched_ticket_ref,a.anno AS edizione,a.varco,a.letto_il,a.esito,a.persone,a.flag_qualita FROM arcade.accesso a LEFT JOIN LATERAL (SELECT b.id_evento FROM arcade.biglietto b WHERE b.id_evento=a.codice_biglietto OR b.codice=a.codice_biglietto ORDER BY CASE WHEN b.id_evento=a.codice_biglietto THEN 0 ELSE 1 END LIMIT 1) ticket ON true WHERE a.anno=? ORDER BY a.letto_il LIMIT ? OFFSET ?";
-            case "stand" -> "SELECT anno AS edizione,codice_stand,ora_inizio AS intervallo_dal,scansioni AS visite,NULL::integer AS contatti,NULL::integer AS contatti_con_consenso,NULL::integer AS persone_fermate,flag_qualita FROM arcade.visita_stand_ora WHERE anno=? ORDER BY ora_inizio LIMIT ? OFFSET ?";
-            case "commerciale" -> "SELECT p.anno AS edizione,p.id_espositore AS espositore_ref,p.codice_stand,p.pacchetto,coalesce(ps.superficie_mq,s.superficie_mq) AS superficie_mq,h.imponibile_listino_eur,h.sconto_dichiarato_pct AS sconto_percentuale,h.imponibile_netto_eur AS imponibile_eur,NULL::numeric AS acconto_pagato_eur,NULL::numeric AS saldo_pagato_eur FROM arcade.pratica p JOIN arcade.contratto_storico h USING(id_pratica) LEFT JOIN arcade.stand s ON s.codice=p.codice_stand LEFT JOIN arcade.planimetria_stand ps ON ps.anno=p.anno AND ps.codice_stand=p.codice_stand WHERE p.anno=? ORDER BY p.id_espositore LIMIT ? OFFSET ?";
+            case "vendite" -> "SELECT * FROM arcade.v_bi_vendite WHERE edizione=? ORDER BY registrato_il LIMIT ? OFFSET ?";
+            case "accessi" -> "SELECT * FROM arcade.v_bi_accessi WHERE edizione=? ORDER BY letto_il LIMIT ? OFFSET ?";
+            case "stand" -> "SELECT * FROM arcade.v_bi_stand WHERE edizione=? ORDER BY intervallo_dal LIMIT ? OFFSET ?";
+            case "commerciale" -> "SELECT * FROM arcade.v_bi_commerciale WHERE edizione=? ORDER BY espositore_ref LIMIT ? OFFSET ?";
             case "qualita" -> "SELECT anno AS edizione,tabella AS fonte,flag AS codice,righe AS conteggio FROM arcade.v_registro_anomalie WHERE anno=? ORDER BY tabella,flag LIMIT ? OFFSET ?";
             default -> throw new ApiFailure(404,"ROUTE_BI_NON_TROVATA","Flusso BI non definito.");
         };

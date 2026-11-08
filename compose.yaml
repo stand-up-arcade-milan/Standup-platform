@@ -9,6 +9,7 @@ services:
       POSTGRES_DB: arcade
       POSTGRES_USER: ${POSTGRES_USER:-arcade_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arcade_dev_only}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-arcade_app_dev_only}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -27,8 +28,10 @@ services:
     restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/arcade
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-arcade_admin}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-arcade_dev_only}
+      SPRING_DATASOURCE_USERNAME: arcade_app
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_APP_PASSWORD:-arcade_app_dev_only}
+      ARCADE_AUTH_LOCAL_TOKENS_ENABLED: ${ARCADE_AUTH_LOCAL_TOKENS_ENABLED:-true}
+      ARCADE_JWT_SECRET: ${ARCADE_JWT_SECRET:-local-development-secret-change-me-32-bytes}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:

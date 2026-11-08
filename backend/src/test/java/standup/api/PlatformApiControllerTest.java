@@ -134,9 +134,13 @@ class PlatformApiControllerTest {
         assertEquals("GIA_RICEVUTO", retryBody.get("stato"));
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
-        verify(db, times(2)).update(sql.capture(), any(Object[].class));
-        assertTrue(sql.getAllValues().get(1).contains("flag_qualita"));
-        assertTrue(sql.getAllValues().get(1).contains("?::text[]"));
+        verify(db, times(4)).update(sql.capture(), any(Object[].class));
+        List<String> kpiWrites = sql.getAllValues().stream()
+                .filter(statement -> statement.contains("INSERT INTO arcade.kpi_osservazione"))
+                .toList();
+        assertEquals(1, kpiWrites.size());
+        assertTrue(kpiWrites.get(0).contains("flag_qualita"));
+        assertTrue(kpiWrites.get(0).contains("?::text[]"));
     }
 
     private MockHttpServletRequest request(String method, String uri) {

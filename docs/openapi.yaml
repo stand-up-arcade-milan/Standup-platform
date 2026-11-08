@@ -165,6 +165,7 @@ paths:
       tags: [Pubblico]
       summary: Restituisce stand, varchi e indicatori aggregati per la mappa
       operationId: getMappa
+      description: includiAffollamento=true richiede un bearer DIREZIONE o AMMINISTRATORE; la mappa pubblica non espone indicatori di affollamento.
       parameters:
         - $ref: '#/components/parameters/Edizione'
         - name: includiAffollamento
@@ -177,6 +178,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Mappa' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/ServerError' }
 
   /espositori:
@@ -292,7 +295,7 @@ paths:
   /espositori/me/contatti:
     get:
       tags: [Espositore]
-      summary: Elenca i contatti autorizzati dei soli stand dell'espositore
+      summary: Elenca i soli lead adulti con entrambi i consensi e idonei secondo le regole MQL
       operationId: listMieiContatti
       security:
         - exhibitorJwt: []
@@ -302,7 +305,7 @@ paths:
         - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
-          description: Contatti visibili in base a consenso e regole MQL
+          description: "Risposta minimizzata: email solo per lead condivisi e qualificati; fascia d'età e provincia non vengono restituite."
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ContattoPage' }
@@ -707,7 +710,7 @@ paths:
         - $ref: '#/components/parameters/IdPratica'
       responses:
         '200':
-          description: Metadati e link autorizzati ai documenti SharePoint
+          description: Metadati dei documenti archiviati; i PDF generati si scaricano dalla rotta dedicata.
           content:
             application/json:
               schema:
@@ -717,6 +720,39 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/DocumentoPratica' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /pratiche/{id}/documenti/{idDocumento}/download:
+    get:
+      tags: [Commerciale, Espositore]
+      summary: Scarica un documento commerciale archiviato
+      description: Il server verifica ruolo e titolarita della pratica e invia il PDF come allegato privato senza cache.
+      operationId: downloadDocumentoPratica
+      security:
+        - internalBearer: []
+        - exhibitorJwt: []
+      parameters:
+        - $ref: '#/components/parameters/IdPratica'
+        - name: idDocumento
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: PDF generato e archiviato nel sistema
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, enum: ['private, no-store'] }
+            ETag:
+              schema: { type: string, description: SHA-256 del contenuto }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -925,8 +961,9 @@ paths:
   /lead-magnet:
     get:
       tags: [Pubblico]
-      summary: Elenca i lead magnet attivi per edizione e stand
+      summary: Elenca i lead magnet attivi globali o associati allo stand
       operationId: listLeadMagnet
+      description: La risposta non include identificativi dell'espositore; stand filtra le offerte globali e quelle pubblicate per lo stand indicato.
       parameters:
         - $ref: '#/components/parameters/Edizione'
         - name: stand
@@ -943,7 +980,7 @@ paths:
                 properties:
                   items:
                     type: array
-                    items: { $ref: '#/components/schemas/LeadMagnet' }
+                    items: { $ref: '#/components/schemas/LeadMagnetPubblico' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/ServerError' }
     post:
@@ -984,6 +1021,7 @@ paths:
         - name: al
           in: query
           schema: { type: string, format: date }
+        - $ref: '#/components/parameters/FonteKpi'
       responses:
         '200':
           description: Indicatori con formula, fonte, aggiornamento e qualità
@@ -1013,6 +1051,7 @@ paths:
         - name: al
           in: query
           schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/FonteKpi'
       responses:
         '200':
           description: Serie temporale aggregate per padiglione e varco
@@ -1038,6 +1077,13 @@ paths:
           required: true
           schema: { type: string }
         - $ref: '#/components/parameters/Edizione'
+        - name: dal
+          in: query
+          schema: { type: string, format: date-time }
+        - name: al
+          in: query
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/FonteKpi'
       responses:
         '200':
           description: KPI dello stand; l'espositore vede solo il proprio stand
@@ -1064,6 +1110,13 @@ paths:
           required: true
           schema: { type: string }
         - $ref: '#/components/parameters/Edizione'
+        - name: dal
+          in: query
+          schema: { type: string, format: date-time }
+        - name: al
+          in: query
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/FonteKpi'
       responses:
         '200':
           description: Un espositore autenticato può leggere solo il proprio riepilogo
@@ -1085,6 +1138,13 @@ paths:
         - internalBearer: []
       parameters:
         - $ref: '#/components/parameters/Edizione'
+        - name: dal
+          in: query
+          schema: { type: string, format: date-time }
+        - name: al
+          in: query
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/FonteKpi'
       responses:
         '200':
           description: MQL per lead magnet, senza righe personali
@@ -1173,6 +1233,27 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /admin/audit:
+    get:
+      tags: [Amministrazione]
+      summary: Consulta il registro pseudonimizzato degli accessi sensibili e delle azioni amministrative
+      operationId: listAuditEvents
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Eventi senza contenuti, email, indirizzi IP o token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEventPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/ServerError' }
 
   /admin/edizioni/{anno}:
@@ -1455,6 +1536,12 @@ components:
       name: cursor
       in: query
       schema: { type: string }
+    FonteKpi:
+      name: fonte
+      in: query
+      required: false
+      description: Filtra le osservazioni KPI per una delle fonti dichiarate in KpiObservation.fonte.
+      schema: { type: string, minLength: 1 }
     IdPratica:
       name: id
       in: path
@@ -1731,7 +1818,33 @@ components:
               id: { type: string, format: uuid }
               tipo: { type: string, enum: [ESPOSITORE, VISITATORE] }
               stato: { type: string, enum: [NUOVA, IN_LAVORAZIONE, CHIUSA] }
+              anno: { type: integer, nullable: true }
+              azienda: { type: string, nullable: true }
+              categoria: { type: string, nullable: true }
+              metriQuadriDesiderati: { type: number, nullable: true }
+              note: { type: string, nullable: true, description: Campo potenzialmente personale; visibile solo a commerciale e amministratore. }
+              consensoPrivacy: { type: boolean }
+              consensoMarketing: { type: boolean }
+              referente: { type: string, nullable: true, description: Dato personale; visibile solo a commerciale e amministratore. }
+              email: { type: string, format: email, nullable: true, description: Dato personale; visibile solo a commerciale e amministratore. }
               createdAt: { type: string, format: date-time }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    AuditEventPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [eventId, occurredAt, actorRole, action, resource]
+            properties:
+              eventId: { type: integer, format: int64 }
+              occurredAt: { type: string, format: date-time }
+              actorRef: { type: string, nullable: true, pattern: '^[0-9a-f]{64}$', description: HMAC pseudonimo non reversibile senza la chiave applicativa. }
+              actorRole: { type: string }
+              action: { type: string, enum: [GET, POST, PATCH, PUT] }
+              resource: { type: string, description: Rotta normalizzata senza identificativi record. }
         page: { $ref: '#/components/schemas/PageInfo' }
     StatoPratica:
       type: string
@@ -1800,7 +1913,11 @@ components:
         id: { type: string, format: uuid }
         tipo: { type: string, enum: [OFFERTA, CONTRATTO, ALTRO] }
         nome: { type: string }
-        url: { type: string, format: uri, nullable: true, description: Link temporaneo autorizzato a SharePoint; nullo finché la destinazione documentale non è configurata. }
+        url: { type: string, format: uri, nullable: true, description: Link esterno legacy; nullo per i PDF generati e archiviati dal servizio. }
+        downloadUrl: { type: string, nullable: true, description: Rotta autenticata del PDF archiviato; null per documenti legacy con solo link esterno. I riepiloghi automatici non sono l'originale del contratto firmato. }
+        mimeType: { type: string, nullable: true, example: application/pdf }
+        dimensioneByte: { type: integer, format: int64, nullable: true, minimum: 0 }
+        sha256: { type: string, nullable: true, pattern: '^[0-9a-f]{64}$', description: Impronta di integrita del file archiviato. }
         creatoIl: { type: string, format: date-time }
     Acconto:
       type: object
@@ -1833,18 +1950,15 @@ components:
           type: array
           items:
             type: object
-            required: [id, raccoltoIl, consensoMarketing, utilizzabileMarketing]
+            required: [id, edizione, codiceStand, raccoltoIl, interesse, email]
             properties:
               id: { type: string }
+              edizione: { type: integer }
               raccoltoIl: { type: string, format: date-time }
               codiceStand: { type: string }
-              fasciaEta: { type: string, enum: ['0-7', '8-13', '14-17', '18-24', '25-34', '35-44', '45+', FAMIGLIA, NON_DICHIARATO] }
-              provincia: { type: string }
-              email: { type: string, format: email, nullable: true, description: Restituita solo se il consenso alla condivisione con l’espositore è stato espresso. }
+              idLeadMagnet: { type: integer, format: int64, nullable: true }
+              email: { type: string, format: email, description: 'Restituita solo dopo entrambi i consensi, la verifica di fascia adulta e l''idoneità MQL.' }
               interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
-              consensoEspositori: { type: boolean }
-              consensoMarketing: { type: string, enum: [SI, NO, NON_DICHIARATO] }
-              utilizzabileMarketing: { type: boolean }
         page: { $ref: '#/components/schemas/PageInfo' }
     NuovoAccesso:
       type: object
@@ -1875,16 +1989,19 @@ components:
         rilevataIl: { type: string, format: date-time }
         ticketRef: { type: string, writeOnly: true, description: Codice QR usato per il controllo duplicati; il server conserva un'impronta HMAC e non restituisce il valore originale. }
         idLeadMagnet: { type: integer, format: int64, nullable: true }
-        consensoEspositori: { type: boolean, default: false }
-        email: { type: string, format: email, writeOnly: true, description: Facoltativa; conservata solo nel registro riservato se il consenso la autorizza. }
+        consensoEspositori: { type: boolean, default: false, description: Consenso separato alla condivisione con l'espositore. }
+        consensoMarketing: { type: boolean, default: false, description: Consenso distinto per l'uso marketing del lead. }
+        fasciaEta: { type: string, enum: ['18-24', '25-34', '35-44', '45+'], description: Fascia adulta autodichiarata; non inviare dati di minori. Necessaria per creare un lead. }
+        email: { type: string, format: email, writeOnly: true, description: 'Facoltativa; viene conservata solo con entrambi i consensi, fascia adulta e lead magnet attivo.' }
     EsitoScansione:
       type: object
-      required: [eventId, accettata, duplicata, conteggioStand]
+      required: [eventId, accettata, duplicata, conteggioStand, leadAcquisito]
       properties:
         eventId: { type: string }
         accettata: { type: boolean }
         duplicata: { type: boolean }
         conteggioStand: { type: integer, minimum: 0 }
+        leadAcquisito: { type: boolean, description: Vero soltanto se il record ha superato tutti i controlli di consenso e idoneità. }
         messaggio: { type: string }
     ConteggioPedana:
       type: object
@@ -1936,6 +2053,16 @@ components:
         titolo: { type: string }
         interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
         attivo: { type: boolean }
+    LeadMagnetPubblico:
+      type: object
+      required: [id, edizione, tipo, titolo, interesse]
+      properties:
+        id: { type: integer, format: int64 }
+        edizione: { type: integer }
+        stand: { type: string, nullable: true, description: Null per offerte globali; valorizzato per offerte dello stand. }
+        tipo: { type: string, enum: [ACCESSO_BETA, CODICE_SCONTO, CONTENUTO_ESCLUSIVO, TORNEO, ESTRAZIONE, DEMO_PRIVATA] }
+        titolo: { type: string }
+        interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
     NuovoLeadMagnet:
       type: object
       required: [edizione, tipo, titolo, interesse]
@@ -2090,19 +2217,20 @@ components:
         flagQualita: { type: array, items: { type: string } }
     FattoStand:
       type: object
-      required: [edizione, codiceStand, intervalloDal, visite, contatti]
+      required: [edizione, codiceStand, intervalloDal, contatti, contattiConConsenso, fonti, flagQualita]
       properties:
         edizione: { type: integer }
         codiceStand: { type: string }
         intervalloDal: { type: string, format: date-time }
-        visite: { type: integer, minimum: 0 }
-        contatti: { type: integer, minimum: 0, nullable: true, description: Null quando la fonte non riporta i contatti per intervallo. }
-        contattiConConsenso: { type: integer, minimum: 0, nullable: true }
-        personeFermate: { type: integer, minimum: 0, nullable: true }
+        visite: { type: integer, minimum: 0, nullable: true, description: Null quando l'intervallo non ha una fonte di visite; zero significa conteggio rilevato pari a zero. }
+        contatti: { type: integer, minimum: 0, description: 'Contatti raccolti nell''intervallo, senza email o identificativi.' }
+        contattiConConsenso: { type: integer, minimum: 0, description: 'Sottoinsieme adulto con entrambi i consensi, idoneita marketing e lead magnet quando richiesto.' }
+        personeFermate: { type: integer, minimum: 0, nullable: true, description: Somma delle nuove persone rilevate dal sensore; null se non esiste una lettura per l'intervallo. }
+        fonti: { type: array, items: { type: string }, description: Tabelle e fonti che hanno prodotto dati per l'intervallo. }
         flagQualita: { type: array, items: { type: string } }
     FattoCommerciale:
       type: object
-      required: [edizione, espositoreRef, codiceStand, superficieMq, imponibileEur]
+      required: [edizione, espositoreRef, codiceStand, superficieMq, imponibileEur, stato, flagQualita, fonte]
       properties:
         edizione: { type: integer }
         espositoreRef: { type: string, description: "Identificativo interno senza ragione sociale, email o partita IVA." }
@@ -2114,6 +2242,10 @@ components:
         imponibileEur: { type: number, minimum: 0 }
         accontoPagatoEur: { type: number, minimum: 0, nullable: true }
         saldoPagatoEur: { type: number, minimum: 0, nullable: true }
+        stato: { $ref: '#/components/schemas/StatoPratica' }
+        dataFirma: { type: string, format: date, nullable: true }
+        flagQualita: { type: array, items: { type: string }, description: Segnala importi storici non dichiarati e pagamenti non tracciati. }
+        fonte: { type: string, enum: [CONTRATTO_STORICO, PRATICA_CORRENTE] }
     FattoQualita:
       type: object
       required: [edizione, fonte, codice, conteggio]

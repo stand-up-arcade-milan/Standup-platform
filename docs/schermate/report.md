@@ -1,24 +1,9 @@
 # Report
 
-**Utenti:** Direzione e ruoli autorizzati · **Client:** Power BI · **Priorità:** KPI/report MVP.
+**Utenti:** direzione e ruoli autorizzati. **Client:** Power BI o il client report concordato. **Proprietà dei calcoli:** BAD.
 
-## Viste
+La struttura funzionale, le sorgenti, i filtri e le regole di riconciliazione sono descritte in [struttura-report.md](../struttura-report.md). I report consumano i KPI restituiti da `/kpi/*` e i fatti BID esposti da `/bi/dati/*`; non replicano le formule BAD.
 
-- **Accessi e affluenza:** ingressi validi, andamento per ora/varco, picco di presenza, presenti e saturazione per padiglione.
-- **Espositori e stand:** contratti/stati, stand venduti e disponibilità residua, ricavo per m², visite/contatti e conversione per stand.
-- **Lead magnet:** MQL per lead magnet e resa (`GET /kpi/lead-magnet`).
-- **Qualità e fonti:** aggiornamento, qualità, simulazioni/stime e anomalie rilevanti per interpretare i numeri.
-- **Confronto edizioni:** 2024, 2025 e 2026 solo con periodi e definizioni confrontabili.
+Ogni visualizzazione mostra edizione, periodo, filtri, fonte, versione formula, aggiornamento, qualità e flag disponibili. Il report separa affluenza, espositori/stand, lead magnet, qualità e confronto tra edizioni. Non mostra email, QR, identificativi individuali o altri dati personali.
 
-## Filtri, API e definizioni
-
-- Filtri richiesti: edizione, giornata, area e fonte; ogni filtro selezionato deve essere visibile nell'intestazione del report.
-- API attuali: `GET /kpi/affluenza`, `GET /kpi/stand/{codice}`, `GET /kpi/lead-magnet`, `GET /kpi/direzione`. Per la vista complessiva non duplicare in Power BI le formule BAD.
-- Ogni KPI mostra definizione, formula, fonte e data aggiornamento. Definizioni e limiti sono nel [catalogo KPI](../requisiti-mvp.md#indicatori).
-
-## Accesso e lacune
-
-- Direzione consulta dati aggregati; commerciale/staff solo i report autorizzati al proprio ruolo.
-- La bozza OpenAPI non definisce endpoint distinti per tutti i report commerciali/qualità né parametri uniformi per area e fonte: accordare il modello con BAD prima di fissare i visual.
-- Non mostrare dettagli personali dei visitatori nei report aggregati.
-- Per l’esportazione BAD, leggere solo le route `GET /bi/dati/{vendite,accessi,stand,commerciale,qualita}`; i campi non forniti dalla fonte non si ricostruiscono nei report.
+I filtri KPI disponibili includono edizione, intervallo temporale, fonte e le dimensioni consentite dalla specifica rotta. I fatti BID si estraggono per edizione e paginazione e possono essere filtrati localmente per periodo/stand. Valori nulli indicano dato non disponibile; non vanno convertiti in zero. Le edizioni sono confrontate solo quando copertura e definizioni sono compatibili.

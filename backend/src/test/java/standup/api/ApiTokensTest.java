@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import tools.jackson.databind.ObjectMapper;
 
@@ -67,6 +68,18 @@ class ApiTokensTest {
         assertEquals(first, tokens.fingerprint(reference));
         assertEquals(64, first.length());
         assertFalse(first.contains(reference));
+    }
+
+    @Test
+    void productionModeRejectsLocalInternalTokensButAllowsExhibitorAccountTokens() {
+        OidcTokens unavailable = new OidcTokens(token -> { throw new JwtException("No enterprise identity provider configured in this test."); }, "roles", "idEspositore");
+        ApiTokens production = new ApiTokens(new ObjectMapper(), unavailable, SECRET, false);
+        String badToken = tokens.issue("bad-service", "BAD", null, 60);
+        String exhibitorToken = tokens.issue("exhibitor@example.test", "ESPOSITORE", "ESP-1", 60);
+
+        assertEquals(401, assertThrows(ApiFailure.class,
+                () -> production.authenticate(requestWithToken(badToken), "BAD")).status());
+        assertEquals("ESP-1", production.authenticate(requestWithToken(exhibitorToken), "ESPOSITORE").get("idEspositore"));
     }
 
     private MockHttpServletRequest requestWithToken(String token) {
