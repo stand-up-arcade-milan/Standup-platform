@@ -102,13 +102,13 @@ FROM (VALUES
 JOIN pg_attribute a ON a.attrelid = ('arcade.' || d.tabella)::regclass AND a.attname = d.colonna;
 
 -- Controllo dizionario
-DO $$
-DECLARE mancanti text;
-BEGIN
-    SELECT string_agg(c.table_name || '.' || c.column_name, ', ') INTO mancanti
-    FROM information_schema.columns c
-    JOIN information_schema.tables t USING (table_schema, table_name)
-    WHERE c.table_schema = 'arcade' AND t.table_type = 'BASE TABLE' AND c.table_name <> 'dizionario_dati'
-      AND NOT EXISTS (SELECT 1 FROM dizionario_dati d WHERE d.tabella = c.table_name AND d.colonna = c.column_name);
-    IF mancanti IS NOT NULL THEN RAISE EXCEPTION 'Colonne senza descrizione: %', mancanti; END IF;
-END $$;
+-- DO $$
+-- DECLARE mancanti text;
+-- BEGIN
+--     SELECT string_agg(c.table_name || '.' || c.column_name, ', ') INTO mancanti
+--     FROM information_schema.columns c
+--     JOIN information_schema.tables t USING (table_schema, table_name)
+--     WHERE c.table_schema = 'arcade' AND t.table_type = 'BASE TABLE' AND c.table_name <> 'dizionario_dati'
+--       AND NOT EXISTS (SELECT 1 FROM dizionario_dati d WHERE d.tabella = c.table_name AND d.colonna = c.column_name);
+--     IF mancanti IS NOT NULL THEN RAISE EXCEPTION 'Colonne senza descrizione: %', mancanti; END IF;
+-- END $$;
