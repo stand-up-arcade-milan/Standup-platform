@@ -12,8 +12,8 @@ info:
     - BID valida e conserva il risultato; i client leggono gli indicatori da GET /kpi/....
 
     Le route /bi/dati e /integrazioni/bad sono la proposta di integrazione da concordare
-    con BAD. Spring Boot contiene soltanto il boilerplate e il controllo /health; le altre
-    operazioni descritte qui non sono ancora implementate.
+    con BAD. Il backend Spring Boot implementa le operazioni descritte qui; restano da
+    confermare con BID e BAD le dimensioni degli export e i ruoli dei client aziendali.
     Le viste SQL V003 e V007 contengono calcoli già abbozzati: prima di usarle come KPI
     ufficiali, BID e BAD devono confermare formula, proprietario e versione per evitare
     di calcolare lo stesso indicatore in due punti.
@@ -129,6 +129,32 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/Stand' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /listino:
+    get:
+      tags: [Commerciale]
+      summary: Elenca listino, unità e disponibilità per edizione
+      operationId: listListino
+      security:
+        - internalBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Edizione'
+      responses:
+        '200':
+          description: Voci del listino dell'edizione
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ListinoVoce' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -467,7 +493,7 @@ paths:
                 type: object
                 required: [message]
                 properties:
-                  message: { type: string, example: "Se l'account esiste, riceverai un link." }
+                  message: { type: string, example: "Se l'account esiste, riceverai un link.", description: La consegna effettiva dipende dal provider email configurato. }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/ServerError' }
 
@@ -763,6 +789,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/NuovoAccesso' }
       responses:
+        '200':
+          description: Stesso eventId già ricevuto con lo stesso contenuto; viene restituito l’esito conservato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EsitoAccesso' }
         '201':
           description: Lettura registrata; un biglietto rifiutato è comunque un evento valido
           content:
@@ -817,6 +848,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ConteggioPedana' }
       responses:
+        '200':
+          description: Stesso eventId e stesso payload già ricevuti; viene restituita la conferma senza duplicare la rilevazione
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
         '201':
           description: Conteggio acquisito, inclusi i minuti con conteggio zero
           content:
@@ -841,6 +877,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ConteggioSensoreAi' }
       responses:
+        '200':
+          description: Stesso eventId e stesso payload già ricevuti; viene restituita la conferma senza duplicare la rilevazione
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
         '201':
           description: Conteggio acquisito
           content:
@@ -865,6 +906,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/RilevazionePeso' }
       responses:
+        '200':
+          description: Stesso eventId e stesso payload già ricevuti; viene restituita la conferma senza duplicare la rilevazione
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Acquisizione' }
         '201':
           description: Lettura acquisita
           content:
@@ -1487,7 +1533,7 @@ components:
       properties:
         codice: { type: string }
         nome: { type: string }
-        capienza: { type: integer, minimum: 1 }
+        capienza: { type: integer, minimum: 1, nullable: true }
         superficieMq: { type: number, minimum: 0 }
         varchi:
           type: array
@@ -1504,6 +1550,17 @@ components:
         stato: { type: string, enum: [LIBERO, ASSEGNATO, NON_DISPONIBILE] }
         prezzoListinoEur: { type: number, minimum: 0, nullable: true }
         posizioneMappa: { type: string, nullable: true }
+    ListinoVoce:
+      type: object
+      required: [codiceVoce, descrizione, tipo, unita, prezzoEur]
+      properties:
+        codiceVoce: { type: string }
+        descrizione: { type: string }
+        tipo: { type: string, enum: [STAND, PACCHETTO, SERVIZIO] }
+        unita: { type: string, enum: [MQ, FORFAIT, PERCENTUALE, PERCENTUALE_MQ] }
+        prezzoEur: { type: number, minimum: 0 }
+        disponibilita: { type: string, nullable: true }
+        nota: { type: string, nullable: true }
     Mappa:
       type: object
       required: [edizione, padiglioni]
@@ -1738,12 +1795,12 @@ components:
         page: { $ref: '#/components/schemas/PageInfo' }
     DocumentoPratica:
       type: object
-      required: [id, tipo, nome, url, creatoIl]
+      required: [id, tipo, nome, creatoIl]
       properties:
         id: { type: string, format: uuid }
         tipo: { type: string, enum: [OFFERTA, CONTRATTO, ALTRO] }
         nome: { type: string }
-        url: { type: string, format: uri, description: Link temporaneo autorizzato a SharePoint. }
+        url: { type: string, format: uri, nullable: true, description: Link temporaneo autorizzato a SharePoint; nullo finché la destinazione documentale non è configurata. }
         creatoIl: { type: string, format: date-time }
     Acconto:
       type: object
@@ -1781,11 +1838,13 @@ components:
               id: { type: string }
               raccoltoIl: { type: string, format: date-time }
               codiceStand: { type: string }
-              email: { type: string, format: email, description: Restituita solo se il consenso e l'ambito espositore lo consentono. }
+              fasciaEta: { type: string, enum: ['0-7', '8-13', '14-17', '18-24', '25-34', '35-44', '45+', FAMIGLIA, NON_DICHIARATO] }
+              provincia: { type: string }
+              email: { type: string, format: email, nullable: true, description: Restituita solo se il consenso alla condivisione con l’espositore è stato espresso. }
               interesse: { type: string, enum: [BETA_TEST, NEWSLETTER, EVENTO, PRODOTTO, LAVORO_STAGE] }
+              consensoEspositori: { type: boolean }
               consensoMarketing: { type: string, enum: [SI, NO, NON_DICHIARATO] }
               utilizzabileMarketing: { type: boolean }
-              mql: { type: boolean }
         page: { $ref: '#/components/schemas/PageInfo' }
     NuovoAccesso:
       type: object
@@ -1795,7 +1854,7 @@ components:
         edizione: { type: integer }
         varco: { type: string }
         lettoIl: { type: string, format: date-time }
-        codiceBiglietto: { type: string, writeOnly: true, description: Il QR è usato solo per la validazione e non viene restituito nei fatti esposti a BAD. }
+        codiceBiglietto: { type: string, writeOnly: true, description: Il QR è usato solo per la validazione; il server conserva l'identificativo evento del biglietto o un'impronta HMAC se non valido. Il valore originale non viene restituito. }
     EsitoAccesso:
       type: object
       required: [eventId, esito, persone, lettoIl]
@@ -1814,7 +1873,7 @@ components:
         codiceStand: { type: string }
         operatoreId: { type: string }
         rilevataIl: { type: string, format: date-time }
-        ticketRef: { type: string, description: Identificativo pseudonimizzato; non contiene nome o email. }
+        ticketRef: { type: string, writeOnly: true, description: Codice QR usato per il controllo duplicati; il server conserva un'impronta HMAC e non restituisce il valore originale. }
         idLeadMagnet: { type: integer, format: int64, nullable: true }
         consensoEspositori: { type: boolean, default: false }
         email: { type: string, format: email, writeOnly: true, description: Facoltativa; conservata solo nel registro riservato se il consenso la autorizza. }
@@ -2037,8 +2096,8 @@ components:
         codiceStand: { type: string }
         intervalloDal: { type: string, format: date-time }
         visite: { type: integer, minimum: 0 }
-        contatti: { type: integer, minimum: 0 }
-        contattiConConsenso: { type: integer, minimum: 0 }
+        contatti: { type: integer, minimum: 0, nullable: true, description: Null quando la fonte non riporta i contatti per intervallo. }
+        contattiConConsenso: { type: integer, minimum: 0, nullable: true }
         personeFermate: { type: integer, minimum: 0, nullable: true }
         flagQualita: { type: array, items: { type: string } }
     FattoCommerciale:
@@ -2047,14 +2106,14 @@ components:
       properties:
         edizione: { type: integer }
         espositoreRef: { type: string, description: "Identificativo interno senza ragione sociale, email o partita IVA." }
-        codiceStand: { type: string }
+        codiceStand: { type: string, nullable: true }
         pacchetto: { $ref: '#/components/schemas/Pacchetto' }
-        superficieMq: { type: number, minimum: 0 }
+        superficieMq: { type: number, minimum: 0, nullable: true }
         imponibileListinoEur: { type: number, minimum: 0 }
         scontoPercentuale: { type: number, minimum: 0, maximum: 100 }
         imponibileEur: { type: number, minimum: 0 }
-        accontoPagatoEur: { type: number, minimum: 0 }
-        saldoPagatoEur: { type: number, minimum: 0 }
+        accontoPagatoEur: { type: number, minimum: 0, nullable: true }
+        saldoPagatoEur: { type: number, minimum: 0, nullable: true }
     FattoQualita:
       type: object
       required: [edizione, fonte, codice, conteggio]

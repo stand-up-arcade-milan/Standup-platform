@@ -7,6 +7,10 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:arcade_admin}
     password: ${SPRING_DATASOURCE_PASSWORD:arcade_dev_only}
 
+arcade:
+  # Local simulator key only. Production must inject a managed secret and align issuers with BID/BAD.
+  jwt-secret: ${ARCADE_JWT_SECRET:local-development-secret-change-me-32-bytes}
+
 server:
   # Vite and the browser reach this port through Compose's published host port.
   port: 8080
