@@ -1,8 +1,10 @@
 name: Database e documenti
 
-# Controlla che le migrazioni si applichino da zero e che i documenti del database
-# non restino indietro rispetto allo schema. Sta in un file suo per non intralciare
-# il workflow CI principale.
+# Costruisce l'immagine del database del progetto e la avvia da zero, quindi le migrazioni
+# vengono applicate dall'entrypoint come succede davvero alla prima accensione. Se una
+# migrazione fallisce, il contenitore esce e qui si vede: il controllo Compose non se ne
+# accorge, perché al riavvio PostgreSQL trova la cartella dati già creata e salta
+# l'inizializzazione, partendo con lo schema a metà.
 
 on:
   push:
@@ -24,47 +26,48 @@ jobs:
     timeout-minutes: 15
     env:
       POSTGRES_PASSWORD: ci-only-password
-      DSN: postgresql://arcade_admin:ci-only-password@localhost:5432/arcade
+      DSN: postgresql://arcade_admin:ci-only-password@127.0.0.1:5432/arcade
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Installa le dipendenze degli script
         run: python -m pip install --quiet -r scripts/dati/requirements.txt
 
-      # Stesse variabili del Compose locale, così il database di prova è quello vero.
-      - name: Avvia PostgreSQL
+      - name: Costruisci l'immagine del database del progetto
+        run: docker build --file Dockerfile --tag arcade-db:ci .
+
+      # Le stesse variabili del Compose locale. L'entrypoint crea il ruolo applicativo
+      # e poi applica le migrazioni in ordine alfabetico.
+      - name: Avvia il database e applica le migrazioni
         run: |
           docker run -d --name arcade-ci \
             -e POSTGRES_USER=arcade_admin \
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             -e POSTGRES_DB=arcade \
-            -p 5432:5432 postgres:16
-          for _ in $(seq 1 40); do
-            if docker exec arcade-ci pg_isready -U arcade_admin -d arcade >/dev/null 2>&1; then
-              echo "PostgreSQL pronto."
+            -p 127.0.0.1:5432:5432 arcade-db:ci
+          for _ in $(seq 1 90); do
+            if [ "$(docker inspect -f '{{.State.Running}}' arcade-ci)" != "true" ]; then
+              echo "::error::L'inizializzazione del database è fallita: una migrazione non si applica su un database vuoto."
+              docker logs arcade-ci
+              exit 1
+            fi
+            # Durante l'inizializzazione il server ascolta solo sul socket interno:
+            # la porta pubblicata risponde soltanto a migrazioni finite.
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+              echo "Migrazioni applicate, database pronto."
               exit 0
             fi
             sleep 2
           done
-          echo "PostgreSQL non è partito."
+          echo "::error::Il database non è diventato pronto entro il tempo previsto."
           docker logs arcade-ci
           exit 1
-
-      # Un database vuoto e tutte le migrazioni in ordine: se una non è ripetibile da zero,
-      # qui si vede. Ogni migrazione contiene anche il controllo del dizionario dati.
-      - name: Applica tutte le migrazioni
-        run: |
-          set -euo pipefail
-          for file in $(ls database/migrations/V*.sql | sort); do
-            echo "== $file"
-            docker exec -i arcade-ci psql -U arcade_admin -d arcade -v ON_ERROR_STOP=1 -q < "$file"
-          done
 
       - name: Il modello ER cita tutte le tabelle
         run: python scripts/dati/verifica_modello_er.py --dsn "$DSN"
@@ -79,10 +82,10 @@ jobs:
           fi
           echo "Il dizionario corrisponde al database."
 
-      - name: Registro di PostgreSQL se qualcosa fallisce
+      - name: Registro del database se qualcosa fallisce
         if: failure()
-        run: docker logs arcade-ci
+        run: docker logs arcade-ci || true
 
-      - name: Ferma PostgreSQL
+      - name: Ferma il database
         if: always()
-        run: docker rm -f arcade-ci
+        run: docker rm -f arcade-ci || true
