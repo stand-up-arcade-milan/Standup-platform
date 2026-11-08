@@ -43,8 +43,8 @@ Priorità: **M** indispensabile per l'MVP, **S** se il tempo lo consente.
 
 | ID | Requisito | P | Criterio di accettazione | Issue |
 | --- | --- | --- | --- | --- |
-| RF-01 | Caricare le edizioni 2024 e 2025 dal registro unico | M | Le righe nel database coincidono con quelle dei file, il report di qualità è generato in automatico | #15, #16 |
-| RF-02 | Segnalare le anomalie senza correggere le righe | M | Ogni anomalia ha un codice nel catalogo e un conteggio per tabella ed edizione | #16 |
+| RF-01 | Normalizzare e caricare le edizioni 2024 e 2025 dalle fonti originali | M | Una pipeline locale ripetibile importa i dati validi; un report confronta righe sorgente, importate e scartate per file, tabella ed edizione | #15, #16 |
+| RF-02 | Pulire i dati storici in modo motivato e tracciabile | M | Si correggono solo formati o valori ricavabili senza ambiguità; i dati mancanti restano mancanti e i record non affidabili sono scartati con motivazione. Anomalie e scarti sono conteggiati per file, tabella ed edizione, senza esporre dati personali nel repository | #16 |
 | RF-03 | Ripetere il caricamento senza duplicati | M | Un secondo caricamento dello stesso file non aggiunge righe | #15 |
 | RF-04 | Gestire l'edizione 2026 come edizione attiva | M | Date, sede e stato arrivano dalla tabella Edizione, mai scritti nelle pagine | #17 |
 | RF-05 | Simulatori di pedane, sensori AI e peso che inviano lo stesso messaggio di un dispositivo vero | M | Lo stesso script genera una giornata di fiera ripetibile, ogni riga dichiara la fonte SIMULATA | #25, #28 |
@@ -174,3 +174,5 @@ Un requisito è fatto quando:
 2. il codice è in una pull request rivista da un'altra persona del team;
 3. l'endpoint, se c'è, è nel contratto OpenAPI;
 4. la funzione rientra nel test end-to-end delle tre fasi della fiera (#36).
+
+Per dichiarare completa questa sessione di sviluppo, RF-01 e RF-02 devono essere verificati sui file originali già ricevuti: dati puliti e importati nel database locale, decisioni di correzione/scarto documentate, report di qualità aggiornato e sorgenti o dettagli personali mantenuti fuori da Git. La sola presenza dello script o dei file sorgente non soddisfa il criterio.
