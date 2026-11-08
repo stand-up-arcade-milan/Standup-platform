@@ -41,7 +41,7 @@ Privacy by design nel database, non solo nell'applicazione.
 | `arcade_dati_personali` | Tutto, comprese le email |
 
 - **Minimizzazione.** Il registro dei biglietti non contiene nome né contatto del titolare. Le email stanno in `contatto_riservato`, separate dal resto.
-- **Filtro per espositore.** Row level security sulle tabelle degli stand (V006): l'applicazione imposta l'espositore a inizio richiesta e il database restituisce solo le sue righe, anche in caso di errore nel codice.
+- **Filtro per espositore.** Le policy Row Level Security sono definite dalle migrazioni V006–V009, ma non sono attive come barriera per il backend attuale: Compose configura Spring con `arcade_admin` e il codice non imposta `arcade.id_espositore` né assume il ruolo `arcade_espositore`. Alcune query filtrano a livello applicativo. Prima di dichiarare l’isolamento DB completato, usare un ruolo DB non proprietario, impostare il contesto in modo transazionale e provarlo con due espositori diversi (issue [#30](https://github.com/stand-up-arcade-milan/Standup-platform/issues/30)).
 - **Minori.** I contatti di ragazzi di 14-17 anni non sono mai utilizzabili per il marketing, con un controllo automatico a ogni importazione.
 - **Staging.** Si elimina a fine caricamento, perché contiene le email.
 - **Repository.** I file CSV non si versionano. Il report di qualità contiene solo conteggi.

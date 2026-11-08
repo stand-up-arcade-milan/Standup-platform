@@ -5,11 +5,15 @@
 `.github/workflows/ci.yml` parte su ogni push, sulle pull request verso `main` e manualmente da GitHub Actions. Usa solo permessi `contents: read`.
 
 - **Frontend:** installazione riproducibile con Bun e build Vite, che include il controllo TypeScript.
-- **Backend:** `mvn verify` con Java 21; esegue i test Maven presenti e prepara il package.
+- **Backend:** `mvn verify` con Java 21; esegue i test Maven e prepara il package.
 - **OpenAPI:** lint del contratto con Redocly.
 - **Compose smoke check:** valida la configurazione, costruisce anche il target frontend di produzione, crea i container, attende PostgreSQL/API e verifica la home frontend e il proxy frontend→API. I log sono raccolti in caso di errore.
 
-Il repository al momento non contiene una suite di test applicativi; il job Maven controlla compilazione/package e lo smoke check copre la comunicazione tra i servizi. Aggiungere test mirati quando i moduli applicativi vengono implementati.
+Al 08/11/2026 la suite Java contiene 10 test automatici su token e ruoli, formato degli errori, health pubblico, pseudonimizzazione degli export, array PostgreSQL e idempotenza dei KPI. La pipeline li esegue con `mvn verify`.
+
+Questi test non sostituiscono una verifica integrata di tutte le 54 operazioni contro PostgreSQL e i client BID/BAD. Lo smoke test Compose verifica l'avvio dei servizi e il proxy HTTP frontend→API; non importa i dati, non prova Power Apps/Power BI e non copre i flussi completi prima, durante e dopo la fiera. La verifica browser headless registrata in `docs/stato-progetto.md` è manuale e non è ancora una suite E2E ripetibile in CI.
+
+Il lint Redocly controlla la sintassi del contratto OpenAPI, non la corrispondenza automatica tra ogni schema/risposta documentata e l'implementazione Java. L'issue [#10](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10) resta aperta per la revisione congiunta BID–BAD. Non è configurata una Swagger UI nell'applicazione.
 
 ## Consegna immagini
 

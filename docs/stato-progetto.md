@@ -8,7 +8,7 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 - BAD calcola i KPI e li invia a BID. BID conserva e serve i KPI tramite API; i client non ricalcolano le formule.
 - Stack deciso: Java 21 e Spring Boot; PostgreSQL; React e TypeScript con Bun, Vite e TanStack Router; Docker Compose per l'avvio locale.
 - Le schermate 4, 5 e 6 sono implementate in React: `/commerciale`, `/espositore`, `/scansione`. Le schermate 7, 8 e 9 hanno specifiche funzionali senza implementazione; le schermate 1, 2 e 3 sono assegnate a un altro membro.
-- `docs/openapi.yaml` e il contratto condiviso: attualmente descrive 50 percorsi e 54 operazioni, implementate in `backend/src/main/java/standup/api/PlatformApiController.java`.
+- `docs/openapi.yaml` è il contratto condiviso: descrive 50 percorsi e 54 operazioni con handler nel controller Java. La corrispondenza di ogni risposta/schema non è verificata automaticamente e l’approvazione congiunta resta aperta nell’[issue #10](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10).
 
 ## Lavoro completato
 
@@ -23,7 +23,8 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 
 - Il backend implementa accesso pubblico, espositori, pratiche commerciali, biglietteria e accessi, scansioni e simulatori, KPI, avvisi, amministrazione e integrazione BID-BAD.
 - Migrazioni database da V001 a V014. V014 imposta un `search_path` stabile per i trigger commerciali.
-- Le risposte d'errore usano una struttura comune. I ruoli e i bearer token sono verificati dal backend.
+- Le risposte d'errore usano una struttura comune. Ruoli e bearer token sono verificati dal backend; JWT HS256 locale non è l’autenticazione aziendale OIDC/JWKS.
+- Le migrazioni definiscono ruoli e policy RLS, ma Compose collega Spring con `arcade_admin`. Nel codice non risulta l’attivazione del ruolo `arcade_espositore` né l’impostazione transazionale di `arcade.id_espositore`; quindi le policy RLS non forniscono oggi un isolamento DB effettivo per le query API. Alcune query filtrano per espositore a livello applicativo, ma RNF-02 va verificato con un ruolo DB a privilegi minimi e test di isolamento.
 - Gli export BID pseudonimizzano i riferimenti di ticket e ordine; i record esportati non devono contenere email, anagrafiche commerciali o QR in chiaro.
 - Gli array PostgreSQL restituiti dalle query vengono convertiti in array JSON; il ricevitore KPI salva correttamente anche gli array `flagQualita` con tipo `text[]`.
 
@@ -32,7 +33,7 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 - `/commerciale`: richieste, pratiche, listino, assegnazioni e planimetria; le API pubbliche degli espositori continuano a essere mostrate anche quando manca il token per le API interne.
 - `/espositore`: login, accettazione/recupero account, contratto, contatti, indicatori condivisi e stato dei documenti.
 - `/scansione`: lettura QR da fotocamera o inserimento manuale, scelta stand, consenso e lead magnet. Il token non viene salvato oltre la scheda corrente.
-- La palette e le schede funzionali sono in `docs/identita-visiva.md` e `docs/schermate/`.
+- La palette e le schede funzionali sono in `docs/palette-colori.md` e `docs/schermate/`.
 
 ## Decisioni che impattano gli altri gruppi
 
@@ -102,11 +103,27 @@ Esiti di verifica registrati per questa implementazione: `bun run build`, `mvn -
 
 ## Dipendenze e prossimi passi
 
-1. Concordare con BAD le dimensioni KPI, le fonti e le versioni formula definitive.
-2. Confermare issuer, audience, JWKS e ruoli/client per Entra ID, BAD e dispositivi; poi sostituire il verificatore HS256 locale con l'integrazione autorizzata.
-3. Configurare il provider email per inviti e recupero password.
-4. Scegliere archivio, generazione e download dei documenti commerciali.
-5. Allineare con gli altri membri l'integrazione dei rispettivi client; non implementare qui le schermate 1–3 gia assegnate.
+1. Chiudere la revisione BID–BAD del contratto: il KPI approvato è `costo_per_mql`, mentre OpenAPI e Java espongono `costo_per_contatto`; mancano inoltre codici concordati per quota MQL, persone ferme e persone uniche. Verificare i dati disponibili negli export BID→BAD e assegnare chi calcola ogni KPI.
+2. Confermare issuer, audience, JWKS e ruoli/client per Entra ID, BAD e dispositivi; sostituire il verificatore HS256 locale con l’integrazione autorizzata.
+3. Rendere effettive e testare le policy RLS con un ruolo applicativo non proprietario e aggiungere il registro richiesto per accessi ai dati personali e operazioni amministrative (RNF-04).
+4. Aggiungere Swagger UI o concordare un’interfaccia equivalente per consultare e provare `docs/openapi.yaml` (RNF-05).
+5. Configurare il provider email per inviti e recupero password.
+6. Scegliere generazione, archivio e download dei documenti commerciali.
+7. Preparare un avvio demo ripetibile con dati simulati e utenti di prova. I dati cliente importati e il volume PostgreSQL sono presenti solo su questa macchina e non sono inclusi in un clone.
+8. Allineare i client degli altri membri. Le schermate 1–3 restano assegnate all’altro membro; le schermate 7–9 sono specifiche senza implementazione. Nel repository non sono presenti le soluzioni Power Apps, Power Automate e Power BI assegnate a BAD.
+
+## Stato issue GitHub al 08/11/2026
+
+Il repository contiene 38 issue: 13 chiuse e 25 aperte. Il milestone Fase 1 è scaduto il 6 novembre e #10/#12 sono ancora aperte. Nessuna delle issue aperte ha un assegnatario GitHub; i corpi delle issue lasciano i nomi da concordare. Il token disponibile non ha lo scope `read:project`, quindi questo riepilogo viene dalle issue e dai milestone del repository, non dalla vista Projects. Le issue aperte sono:
+
+- **Fase 1:** [#10 contratto API](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10), [#12 mockup](https://github.com/stand-up-arcade-milan/Standup-platform/issues/12).
+- **Fase 2:** [#17 API base](https://github.com/stand-up-arcade-milan/Standup-platform/issues/17), [#18 back office Power Apps](https://github.com/stand-up-arcade-milan/Standup-platform/issues/18), [#19 flusso commerciale](https://github.com/stand-up-arcade-milan/Standup-platform/issues/19), [#20 dati commerciali condivisi](https://github.com/stand-up-arcade-milan/Standup-platform/issues/20), [#22 report Power BI](https://github.com/stand-up-arcade-milan/Standup-platform/issues/22), [#23 prova integrata SAL 2](https://github.com/stand-up-arcade-milan/Standup-platform/issues/23), [#24 SAL 2](https://github.com/stand-up-arcade-milan/Standup-platform/issues/24).
+- **Fase 3:** [#25 tornelli e scanner](https://github.com/stand-up-arcade-milan/Standup-platform/issues/25), [#26 app scansione](https://github.com/stand-up-arcade-milan/Standup-platform/issues/26), [#27 cruscotto staff](https://github.com/stand-up-arcade-milan/Standup-platform/issues/27), [#28 stima dal peso](https://github.com/stand-up-arcade-milan/Standup-platform/issues/28), [#29 report direzione](https://github.com/stand-up-arcade-milan/Standup-platform/issues/29), [#30 RLS e minori](https://github.com/stand-up-arcade-milan/Standup-platform/issues/30), [#31 stato 20/11](https://github.com/stand-up-arcade-milan/Standup-platform/issues/31), [#32 portale espositori](https://github.com/stand-up-arcade-milan/Standup-platform/issues/32), [#33 rinnovi](https://github.com/stand-up-arcade-milan/Standup-platform/issues/33), [#34 riconciliazione](https://github.com/stand-up-arcade-milan/Standup-platform/issues/34), [#35 stato 27/11](https://github.com/stand-up-arcade-milan/Standup-platform/issues/35).
+- **Fase 4:** [#36 test E2E](https://github.com/stand-up-arcade-milan/Standup-platform/issues/36), [#37 README/API/pulizia](https://github.com/stand-up-arcade-milan/Standup-platform/issues/37), [#38 slide e demo](https://github.com/stand-up-arcade-milan/Standup-platform/issues/38), [#39 stato 11/12](https://github.com/stand-up-arcade-milan/Standup-platform/issues/39), [#40 presentazione finale](https://github.com/stand-up-arcade-milan/Standup-platform/issues/40).
+
+Il Gantt è uno snapshot precedente: riporta 11/38 issue completate, mentre GitHub ne mostra 13 chiuse. Anche il calendario va allineato: il brief indica demo SAL 2 il 13 novembre e presentazione finale il 4 dicembre; il Gantt indica SAL 2 il 4 dicembre e finale il 17 dicembre. Il milestone GitHub Fase 2 scade il 4 dicembre e l’issue #24 ha periodo 13 novembre. L’issue #40 ha periodo 4 dicembre, mentre il milestone Fase 4 scade il 17 dicembre. L’issue #39 è intitolata “11/12” ma il periodo è 3 dicembre. Concordare il calendario vincolante e aggiornare le fonti.
+
+L’issue #10 è aperta e il suo testo conta 53 operazioni, mentre il contratto corrente ne descrive 54. Il commento più recente richiede l’allineamento BID–BAD dei KPI e degli export, e uno schema stand pubblico distinto da quello interno: `prezzoListinoEur` è ancora presente nello schema OpenAPI `Stand` usato dalle risposte pubbliche. Il commento segnala anche discrepanze storiche già coperte da migrazioni successive; verificare ogni punto contro lo schema corrente prima di considerarlo ancora aperto.
 
 ## Procedura Git per il gruppo
 

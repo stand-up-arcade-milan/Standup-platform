@@ -572,4 +572,6 @@ Codici ed esportazioni: [palette colori](docs/palette-colori.md).
 <a id="stato-del-progetto"></a>
 ## Stato del progetto
 
-SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro MVP sono approvati. In questa sessione sono stati importati e riconciliati i dati storici e commerciali nel database Docker locale, implementate in Java le 54 operazioni OpenAPI e realizzate in React le schermate 4, 5 e 6 (`/commerciale`, `/espositore`, `/scansione`). Le build Java e React e i controlli HTTP/headless sono passati. Le fonti cliente e il database restano locali ed esclusi da Git; il report aggregato di qualita e versionato. Le schermate 7, 8 e 9 restano specifiche senza codice.
+SAL 1 risulta chiuso. I dati storici sono stati importati e riconciliati nel database Docker locale; le fonti cliente e il volume non sono inclusi in Git. Il backend contiene handler per le 54 operazioni dichiarate in OpenAPI e la UI React implementa le schermate 4, 5 e 6 (`/commerciale`, `/espositore`, `/scansione`). Le build e i controlli HTTP/headless registrati sono documentati in [stato progetto](docs/stato-progetto.md).
+
+La consegna complessiva non è ancora chiusa: l’issue #10 mantiene aperta la revisione BID–BAD del contratto, le schermate 7–9 sono solo specifiche, le schermate 1–3 sono assegnate a un altro membro e restano le soluzioni Power Apps, Power Automate e Power BI del gruppo BAD. GitHub mostra 13 issue chiuse e 25 aperte al 08/11/2026. La CI esegue 10 test automatici Java, ma non una suite E2E delle tre fasi.
