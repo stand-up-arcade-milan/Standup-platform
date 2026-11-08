@@ -18,20 +18,20 @@ Gli export originali disponibili sono stati copiati in locale in `dati-storici/o
 
 L’archivio conteneva anche una copia ZIP annidata, un file temporaneo di Excel e metadati macOS; non sono stati copiati.
 
-## 1. File normalizzati richiesti dall'importazione
+## 1. File originali e normalizzati
 
-Questi cinque file sono il dataset unificato e ripulito atteso dallo script; non sono presenti nell’archivio originale appena aggiunto. Gli export locali sopra sono le fonti da cui ricavare o riconciliare questi file.
+Le sorgenti originali si trovano localmente in dati-storici/originali/ARCADE_Milano_dati/. La pipeline scripts/dati/prepara_storici.py genera i file consumati dall'importazione in dati-storici/normalizzati/. Entrambe le cartelle sono escluse da Git perché contengono identificativi personali o commerciali.
 
-| File | Contenuto |
+| File normalizzato | Contenuto |
 | --- | --- |
-| `expodata_dataset_unificato.csv` | Registro unico degli eventi: 183.174 righe e 22 colonne, con biglietteria, tornelli, scanner e contatti |
-| `contatti_commerciali_2025.csv` | 1.707 contatti raccolti agli stand nel 2025, con email e consenso marketing |
-| `anomalie_riepilogo.csv` | Registro delle anomalie trovate, con codice, righe coinvolte e gestione adottata |
-| `scarti_righe_rimosse.csv` | 2.075 letture doppie dei tornelli eliminate, con la riga originale |
-| `fasce_orarie_mancanti_stand.csv` | 70 combinazioni stand, giorno e ora senza dati |
-| `dati_superflui.csv` | Campi superflui o ricavabili, con la decisione presa |
+| expodata_dataset_unificato.csv | Eventi normalizzati di biglietteria, tornelli, scanner e contatti |
+| contatti_commerciali_2025.csv | Contatti 2025 con consensi e dati riservati; resta locale |
+| anomalie_riepilogo.csv | Conteggi per codice di anomalia e gestione adottata |
+| scarti_righe_rimosse.csv | Letture duplicate rimosse, con riga sorgente conservata |
+| fasce_orarie_mancanti_stand.csv | Combinazioni stand/data/ora senza misurazione |
+| commerciale_normalizzato.json | Espositori, planimetria, listino e contratti riconciliati |
 
-Il dataset è già stato ripulito: date in formato ISO, orari in ora italiana, province e tipi di biglietto uniformati, e una colonna `controllo_qualita` su ogni riga.
+La pipeline uniforma date e orari in Europe/Rome, categorie ticket, esiti dei varchi, province e formati. Le anomalie affidabili restano marcate; il dettaglio delle esclusioni e delle decisioni è in [Trattamento dei dati ricevuti](trattamento-dati-ricevuti.md) e nel [report di qualità](report-qualita-dati.md).
 
 ## 2. Che cosa contiene
 
@@ -142,28 +142,23 @@ I 2.787 biglietti mai passati ai varchi sono veri no-show e restano nei dati. I 
 - Fascia d'età e provincia sono dati del titolare del biglietto: nei report si aggregano.
 - I dati personali dei contatti non vanno nella repository né nei mockup.
 
-## 7. Importazione
+## 7. Importazione locale e destinazione
 
-Lo script [`scripts/dati/importa_storici.py`](../scripts/dati/importa_storici.py) esegue tutto in un comando:
+La pipeline corrente è composta da scripts/dati/prepara_storici.py, scripts/dati/importa_dataset.py e scripts/dati/trasforma.sql. Il primo genera i file normalizzati; il secondo applica le migrazioni, carica uno schema staging temporaneo, importa i domini e scrive il report aggregato. Il wrapper scripts/dati/importa_storici.py richiama l'importer corrente.
 
-```
-pip install -r scripts/dati/requirements.txt
-python scripts/dati/importa_storici.py --dsn "postgresql://utente:password@localhost/arcade" --dati ./dati-storici
-```
+Per rigenerare i normalizzati, con i requisiti Python installati:
 
-1. Applica le migrazioni non ancora applicate.
-2. Carica i cinque file in staging, senza trasformarli.
-3. Si ferma se trova `id_evento` duplicati o contatti senza riga nel file dei contatti.
-4. Trasforma lo staging nello schema con [`trasforma.sql`](../scripts/dati/trasforma.sql).
-5. Scrive il registro dell'importazione e il [report di qualità](report-qualita-dati.md).
-6. Elimina lo staging, perché contiene le email.
+    python scripts/dati/prepara_storici.py
 
-Regole:
-- `id_evento` è la chiave di ogni riga, così il caricamento si può ripetere senza duplicare: una seconda esecuzione carica 0 righe.
-- Le righe con anomalia non si correggono né si cancellano: si conserva il flag di `controllo_qualita`.
-- Data e ora diventano un unico orario con fuso Europe/Rome.
-- Il codice termina con errore se i totali del file e del database non coincidono o se un controllo di integrità non passa.
-- I CSV restano fuori dal repository.
+Per importarli in un PostgreSQL locale:
+
+    python scripts/dati/importa_dataset.py --dsn "postgresql://utente:password@localhost/arcade"
+
+Usare le credenziali amministrative locali configurate per il database e non salvarle nel repository. La copia di sviluppo importata è nel database arcade del volume Docker standup-import_postgres_data; i file sorgente e normalizzati restano nelle cartelle locali ignorate da Git. L'importer apre una transazione per staging e caricamento, verifica chiavi, conteggi e vincoli di qualità, produce docs/report-qualita-dati.md e rimuove lo schema staging al termine. In caso di eccezione la transazione annulla le modifiche non completate.
+
+La seconda esecuzione non duplica le righe storiche grazie agli identificativi stabili e alle chiavi di conflitto. Se cambiano input o script, leggere il report e verificare i conteggi prima di usare il database. La CI usa fixture sintetiche in un volume Compose separato: non usa né modifica standup-import_postgres_data.
+
+Per le esclusioni e le regole di qualità vedere [Trattamento dei dati ricevuti](trattamento-dati-ricevuti.md). Per i conteggi dell'ultima importazione vedere il [report di qualità](report-qualita-dati.md).
 
 ## 8. Schema
 

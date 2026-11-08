@@ -1,6 +1,6 @@
 # Governance dei dati
 
-Come il team **Stand up** gestisce i dati, in quattro fasi. Ogni fase indica che cosa è stato fatto e dove si trova.
+Come il team **Stand up** gestisce i dati, in quattro fasi. Il dettaglio delle sorgenti e delle esclusioni è in [Trattamento dei dati ricevuti](trattamento-dati-ricevuti.md); lo scambio tecnico tra i gruppi è in [Integrazione BID-BAD e ambienti](integrazione-bid-bad.md). Ogni fase indica che cosa è stato fatto e dove si trova.
 
 ## 1. Audit e mappa
 
@@ -17,7 +17,7 @@ Il dettaglio è in [`dati-storici.md`](dati-storici.md). Il silo principale è l
 
 ## 2. Pulizia e standardizzazione
 
-Una pipeline ripetibile, [`importa_storici.py`](../scripts/dati/importa_storici.py): staging, controlli, trasformazione, riconciliazione. Gestisce i valori mancanti con `NON_DICHIARATO`, non inventa i dati assenti e non cancella le anomalie: le segnala con un flag sulla riga. Dopo ogni caricamento produce il [report di qualità](report-qualita-dati.md), con il confronto tra righe del file e righe del database e 15 controlli di integrità.
+Una pipeline ripetibile: [prepara_storici.py](../scripts/dati/prepara_storici.py) normalizza gli export; [importa_dataset.py](../scripts/dati/importa_dataset.py) gestisce staging, controlli, trasformazione e riconciliazione. Gestisce i valori mancanti con `NON_DICHIARATO`, non inventa i dati assenti e non cancella le anomalie: le segnala con un flag sulla riga. Dopo ogni caricamento produce il [report di qualità](report-qualita-dati.md), con il confronto tra righe del file e righe del database e 16 controlli di integrità.
 
 ## 3. Classificazione e metadati
 
@@ -45,7 +45,7 @@ Privacy by design nel database, non solo nell'applicazione.
 - **Audit.** Letture autorizzate di dati personali e operazioni amministrative registrano azione, ruolo, risorsa e riferimento pseudonimizzato. Non vengono registrati token, corpi richiesta, email o IP.
 - **Minori.** I contatti di ragazzi di 14-17 anni non sono mai utilizzabili per il marketing, con un controllo automatico a ogni importazione.
 - **Staging.** Si elimina a fine caricamento, perché contiene le email.
-- **Repository.** I file CSV non si versionano. Il report di qualità contiene solo conteggi.
+- **Repository.** dati-storici/originali/ e dati-storici/normalizzati/ sono esclusi da Git. La copia importata è nel volume Docker locale standup-import_postgres_data. I file CSV non si versionano. Il report di qualità contiene solo conteggi.
 
 La verifica RLS è stata eseguita su un database di test sintetico. Il database storico `standup-import` e gli export personali restano separati. Prima dell'uso reale vanno definiti il periodo di conservazione e le procedure di rettifica/cancellazione con il titolare del trattamento.
 
