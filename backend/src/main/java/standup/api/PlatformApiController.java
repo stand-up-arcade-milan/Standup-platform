@@ -239,6 +239,8 @@ public class PlatformApiController {
         if (p.equals("/auth/invito/accetta") && m.equals("POST")) return acceptInvite(b);
         if (p.equals("/auth/password/recupero") && m.equals("POST")) return requestRecovery(b);
         if (p.equals("/auth/password/reimposta") && m.equals("POST")) return resetPassword(b);
+if (p.equals("/auth/google") && m.equals("POST")) return googleAuth(b);
+if (p.equals("/auth/microsoft") && m.equals("POST")) return microsoftAuth(b);
         if (p.equals("/richieste") && m.equals("GET")) return richieste(r);
         if (p.equals("/pratiche") && m.equals("GET")) return pratiche(r);
         if (p.equals("/pratiche") && m.equals("POST")) return createPratica(r, b);
@@ -1089,3 +1091,53 @@ public class PlatformApiController {
         if(db.queryForObject("SELECT count(*) FROM arcade.pratica WHERE id_pratica=? AND id_espositore=?",Integer.class,practice,claims.get("idEspositore"))==0) throw new ApiFailure(404,"PRATICA_NON_TROVATA","Pratica non trovata.");
     }
 }
+
+    private Object googleAuth(Map<String, Object> b) {
+        require(b, "token", "email", "subject");
+        String email = text(b, "email");
+        String subject = text(b, "subject");
+        Map<String, Object> existing = oneOrNull(
+            "SELECT ie.id_account FROM arcade.identita_esterna ie WHERE ie.fornitore = 'GOOGLE' AND ie.subject = ?", subject);
+        if (existing != null) {
+            UUID accountId = uuid(String.valueOf(existing.get("id_account")));
+            db.update("UPDATE arcade.identita_esterna SET ultimo_accesso = now(), email_fornitore = ? WHERE fornitore = 'GOOGLE' AND subject = ?", email, subject);
+            Map<String, Object> account = oneOrNull("SELECT id_espositore FROM arcade.account_espositore WHERE id_account = ?", accountId);
+            if (account == null) throw new ApiFailure(404, "ACCOUNT_NON_TROVATO", "Account non trovato.");
+            return tokenResponse(tokens.issue(email, "ESPOSITORE", String.valueOf(account.get("id_espositore")), 3600));
+        }
+        Map<String, Object> accountByEmail = oneOrNull(
+            "SELECT id_account, id_espositore FROM arcade.account_espositore WHERE lower(email) = lower(?)", email);
+        if (accountByEmail != null) {
+            UUID accountId = uuid(String.valueOf(accountByEmail.get("id_account")));
+            db.update("INSERT INTO arcade.identita_esterna (fornitore, subject, id_account, email_fornitore) VALUES ('GOOGLE', ?, ?, ?)",
+                subject, accountId, email);
+            db.update("UPDATE arcade.account_espositore SET email_verificata = true WHERE id_account = ?", accountId);
+            return tokenResponse(tokens.issue(email, "ESPOSITORE", String.valueOf(accountByEmail.get("id_espositore")), 3600));
+        }
+        throw new ApiFailure(403, "ACCOUNT_NON_REGISTRATO", "L'email non e associata a un account espositore.");
+    }
+
+    private Object microsoftAuth(Map<String, Object> b) {
+        require(b, "token", "email", "subject");
+        String email = text(b, "email");
+        String subject = text(b, "subject");
+        Map<String, Object> existing = oneOrNull(
+            "SELECT ie.id_account FROM arcade.identita_esterna ie WHERE ie.fornitore = 'MICROSOFT' AND ie.subject = ?", subject);
+        if (existing != null) {
+            UUID accountId = uuid(String.valueOf(existing.get("id_account")));
+            db.update("UPDATE arcade.identita_esterna SET ultimo_accesso = now(), email_fornitore = ? WHERE fornitore = 'MICROSOFT' AND subject = ?", email, subject);
+            Map<String, Object> account = oneOrNull("SELECT id_espositore FROM arcade.account_espositore WHERE id_account = ?", accountId);
+            if (account == null) throw new ApiFailure(404, "ACCOUNT_NON_TROVATO", "Account non trovato.");
+            return tokenResponse(tokens.issue(email, "ESPOSITORE", String.valueOf(account.get("id_espositore")), 3600));
+        }
+        Map<String, Object> accountByEmail = oneOrNull(
+            "SELECT id_account, id_espositore FROM arcade.account_espositore WHERE lower(email) = lower(?)", email);
+        if (accountByEmail != null) {
+            UUID accountId = uuid(String.valueOf(accountByEmail.get("id_account")));
+            db.update("INSERT INTO arcade.identita_esterna (fornitore, subject, id_account, email_fornitore) VALUES ('MICROSOFT', ?, ?, ?)",
+                subject, accountId, email);
+            db.update("UPDATE arcade.account_espositore SET email_verificata = true WHERE id_account = ?", accountId);
+            return tokenResponse(tokens.issue(email, "ESPOSITORE", String.valueOf(accountByEmail.get("id_espositore")), 3600));
+        }
+        throw new ApiFailure(403, "ACCOUNT_NON_REGISTRATO", "L'email non e associata a un account espositore.");
+    }
