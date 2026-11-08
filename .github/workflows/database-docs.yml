@@ -51,15 +51,17 @@ jobs:
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             -e POSTGRES_DB=arcade \
             -p 127.0.0.1:5432:5432 arcade-db:ci
-          for _ in $(seq 1 90); do
+          # Durante l'inizializzazione l'entrypoint avvia un server temporaneo che ascolta
+          # solo sul socket interno, quindi pg_isready su 127.0.0.1 dentro al contenitore
+          # risponde soltanto a migrazioni finite. La porta pubblicata non va usata come
+          # prova: Docker la apre subito, prima che il database esista.
+          for _ in $(seq 1 120); do
             if [ "$(docker inspect -f '{{.State.Running}}' arcade-ci)" != "true" ]; then
               echo "::error::L'inizializzazione del database è fallita: una migrazione non si applica su un database vuoto."
               docker logs arcade-ci
               exit 1
             fi
-            # Durante l'inizializzazione il server ascolta solo sul socket interno:
-            # la porta pubblicata risponde soltanto a migrazioni finite.
-            if timeout 1 bash -c '</dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+            if docker exec arcade-ci pg_isready -h 127.0.0.1 -p 5432 -U arcade_admin -d arcade >/dev/null 2>&1; then
               echo "Migrazioni applicate, database pronto."
               exit 0
             fi
@@ -68,6 +70,13 @@ jobs:
           echo "::error::Il database non è diventato pronto entro il tempo previsto."
           docker logs arcade-ci
           exit 1
+
+      - name: Conta le tabelle create
+        run: |
+          docker exec arcade-ci psql -U arcade_admin -d arcade -Atc \
+            "select 'tabelle: '||count(*) from information_schema.tables where table_schema='arcade' and table_type='BASE TABLE'"
+          docker exec arcade-ci psql -U arcade_admin -d arcade -Atc \
+            "select 'colonne descritte: '||count(*) from arcade.dizionario_dati"
 
       - name: Il modello ER cita tutte le tabelle
         run: python scripts/dati/verifica_modello_er.py --dsn "$DSN"
