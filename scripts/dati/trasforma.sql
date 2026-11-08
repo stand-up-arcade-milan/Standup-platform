@@ -8,11 +8,13 @@ SELECT DISTINCT luogo, padiglione FROM staging.eventi WHERE fonte IN ('SCANNER_S
 ON CONFLICT DO NOTHING;
 
 INSERT INTO espositore (id_espositore)
-SELECT DISTINCT id_espositore FROM staging.eventi WHERE fonte IN ('SCANNER_STAND','CONTATTI_STAND')
+SELECT DISTINCT id_espositore FROM staging.eventi
+WHERE fonte IN ('SCANNER_STAND','CONTATTI_STAND')
+  AND NULLIF(BTRIM(id_espositore), '') IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO assegnazione_stand (anno, codice_stand, id_espositore)
-SELECT DISTINCT edizione::smallint, luogo, id_espositore FROM staging.eventi WHERE fonte IN ('SCANNER_STAND','CONTATTI_STAND')
+SELECT DISTINCT edizione::smallint, luogo, id_espositore FROM staging.eventi WHERE fonte = 'CONTATTI_STAND'
 ON CONFLICT DO NOTHING;
 
 -- 2. Biglietteria
@@ -31,9 +33,10 @@ FROM staging.eventi WHERE fonte = 'BIGLIETTERIA'
 ON CONFLICT DO NOTHING;
 
 -- 3. Tornelli
-INSERT INTO accesso (id_evento, anno, varco, letto_il, codice_biglietto, esito, persone, flag_qualita)
+INSERT INTO accesso (id_evento, anno, varco, letto_il, codice_biglietto, esito, persone, motivo_rifiuto, flag_qualita)
 SELECT id_evento, edizione::smallint, luogo, (data || ' ' || ora)::timestamp AT TIME ZONE 'Europe/Rome',
        id_riferimento, evento, quantita::smallint,
+       NULLIF(motivo_rifiuto, ''),
        CASE WHEN controllo_qualita = 'OK' THEN '{}' ELSE string_to_array(controllo_qualita, '|') END
 FROM staging.eventi WHERE fonte = 'TORNELLI'
 ON CONFLICT DO NOTHING;

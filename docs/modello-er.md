@@ -1,6 +1,6 @@
 # Modello ER
 
-Il diagramma descrive lo schema `arcade` di PostgreSQL così come lo costruiscono le [migrazioni](../database/migrations) da `V001` a `V009`. Se diagramma e SQL non coincidono, vale l'SQL. Il significato di ogni colonna è nel [dizionario dati](dizionario-dati.md).
+Il diagramma descrive lo schema `arcade` di PostgreSQL così come lo costruiscono le [migrazioni](../database/migrations) da `V001` a `V014`. Se diagramma e SQL non coincidono, vale l'SQL. Il significato di ogni colonna è nel [dizionario dati](dizionario-dati.md).
 
 ## 1. Modello completo
 
@@ -277,11 +277,15 @@ erDiagram
 | Lead magnet | `lead_magnet`, `contatto_stand.id_lead_magnet` | Contatti qualificati (MQL), quota MQL e resa dei lead magnet |
 | Registrazione del visitatore | `registrazione_visitatore`, `registrazione_riservata`, `interesse_visitatore` | Interessi del pubblico, solo come totali e solo per chi è profilabile |
 
-## 4. Novità della V008 e della V009
+## 4. Novità dalla V008 alla V014
 
 La `V008` corregge lo schema dopo il confronto con il contratto OpenAPI: sede e stato dell'edizione, nome del padiglione, stand non disponibili, motivo del rifiuto agli ingressi, costi dell'edizione, token di revoca dei consensi, peso senza letture doppie e la tabella `scansione_stand`. Aggiunge anche le viste `v_stand_stato`, `v_visitatori_riepilogo`, `v_costo_per_mql` e `v_visite_stand_scansioni`.
 
 La `V009` costruisce l'area commerciale, l'accesso degli espositori e i KPI ricevuti da BAD. Il disegno mostra solo queste tabelle.
+
+La `V010` conserva dati commerciali storici, informazioni riservate degli espositori e planimetrie per edizione; consente inoltre di pianificare il 2026 senza inventare le date. La `V011` aggiunge le chiavi di idempotenza e i token monouso di recupero password e revoca consensi. La `V012` registra il consenso alla condivisione e il lead magnet della scansione. La `V013` permette di creare i metadati di un documento prima che sia configurato un archivio che fornisca un URL. La `V014` rende indipendente dal `search_path` della connessione il funzionamento dei trigger commerciali.
+
+Le V010–V013 aggiungono anche `espositore_riservato`, `planimetria_stand`, `contratto_storico`, `contratto_storico_riga`, `acquisizione_evento`, `recupero_password` e `revoca_registrazione_visitatore`, oltre ai campi `consenso_espositori`, `id_lead_magnet` e all'URL documentale nullable. Il dettaglio relazionale di queste estensioni è nel SQL delle migrazioni.
 
 ```mermaid
 erDiagram

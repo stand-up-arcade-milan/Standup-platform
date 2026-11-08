@@ -1,6 +1,6 @@
 # Dizionario dati
 
-Descrive ogni colonna del database: significato, livello di sensibilità e titolare. Le sezioni fino alla V007 sono generate da `scripts/dati/genera_dizionario.py`, quelle della V008 e della V009 vengono dalle migrazioni stesse. Vive anche nel database, nella tabella `arcade.dizionario_dati`.
+Descrive ogni colonna del database: significato, livello di sensibilità e titolare. Le sezioni fino alla V007 sono generate da `scripts/dati/genera_dizionario.py`; le migrazioni V008–V014 registrano nel database le colonne aggiunte successivamente, nella tabella `arcade.dizionario_dati`. Per le strutture commerciali e di importazione storica introdotte da V010–V013, il dettaglio puntuale è tracciato negli `INSERT` di descrizione delle rispettive migrazioni. La V014 stabilizza il `search_path` delle funzioni trigger.
 
 | Livello | Significato | Chi può vederlo |
 |---|---|---|
