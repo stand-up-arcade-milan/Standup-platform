@@ -1,6 +1,6 @@
 # Listino e planimetria stand
 
-**Utenti:** Commerciale · **Client:** Power Apps · **Priorità:** requisito MVP RF-10.
+**Utenti:** Commerciale · **Client:** React (`/commerciale`) · **Priorità:** requisito MVP RF-10.
 
 ## Contenuto e azioni
 

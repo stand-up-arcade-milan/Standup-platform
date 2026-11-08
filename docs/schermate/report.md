@@ -21,3 +21,4 @@
 - Direzione consulta dati aggregati; commerciale/staff solo i report autorizzati al proprio ruolo.
 - La bozza OpenAPI non definisce endpoint distinti per tutti i report commerciali/qualità né parametri uniformi per area e fonte: accordare il modello con BAD prima di fissare i visual.
 - Non mostrare dettagli personali dei visitatori nei report aggregati.
+- Per l’esportazione BAD, leggere solo le route `GET /bi/dati/{vendite,accessi,stand,commerciale,qualita}`; i campi non forniti dalla fonte non si ricostruiscono nei report.

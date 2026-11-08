@@ -1,6 +1,6 @@
 # Back office commerciale
 
-**Utenti:** Commerciale · **Client:** Power Apps · **Priorità:** flusso commerciale MVP.
+**Utenti:** Commerciale · **Client:** React (`/commerciale`) · **Priorità:** flusso commerciale MVP.
 
 ## Vista iniziale
 

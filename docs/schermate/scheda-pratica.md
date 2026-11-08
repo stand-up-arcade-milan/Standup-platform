@@ -1,6 +1,6 @@
 # Scheda pratica commerciale
 
-**Utenti:** Commerciale · **Client:** Power Apps · **Priorità:** requisito MVP RF-11–RF-14 e RF-17.
+**Utenti:** Commerciale · **Client:** React (`/commerciale`) · **Priorità:** requisito MVP RF-11–RF-14 e RF-17.
 
 ## Contenuto
 

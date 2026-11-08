@@ -15,3 +15,5 @@
 - `POST /accessi` restituisce i motivi `BIGLIETTO_NON_VALIDO`, `GIA_USATO` o `GIORNO_NON_VALIDO` nel campo `motivoRifiuto`.
 - Il contratto non definisce un endpoint o una UI staff per verificare/ricercare un biglietto; non implementare una ricerca o bypass client senza aggiornare il contratto.
 - L'emissione e vendita del biglietto restano alla biglietteria esterna; questo flusso verifica l'accesso.
+- Un nuovo invio con lo stesso `eventId` restituisce l'esito già registrato; riutilizzare lo stesso ID con contenuto diverso è un conflitto.
+- Il riferimento del biglietto è salvato con impronta HMAC, non in chiaro. La schermata non deve scriverlo nei log o nel tracciamento client.

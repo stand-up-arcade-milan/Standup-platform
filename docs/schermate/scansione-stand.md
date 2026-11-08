@@ -1,6 +1,6 @@
 # Scansione allo stand
 
-**Utenti:** staff o espositore autorizzato · **Client:** web mobile React o Power Apps, scelta ancora da validare · **Priorità:** RF-22.
+**Utenti:** staff o espositore autorizzato · **Client:** React responsive (`/scansione`) · **Priorità:** RF-22.
 
 ## Contenuto e azioni
 

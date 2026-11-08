@@ -9,23 +9,28 @@ export const Route = createRootRoute({
 function RootLayout() {
   return (
     <div className="shell">
+      <a className="skip-link" href="#main-content">Vai al contenuto</a>
       <header className="topbar">
         <div>
           <p className="eyebrow">ARCADE MILANO · PIATTAFORMA</p>
-          <h1>Stand up</h1>
+          <h1><span className="brand-mark">S</span>Stand up</h1>
         </div>
         <nav aria-label="Navigazione principale">
-          <Link to="/" activeProps={{ className: 'active' }}>
-            Connessioni
+          <Link to="/commerciale" activeProps={{ className: 'active' }}>
+            Commerciale
           </Link>
-          <Link to="/about" activeProps={{ className: 'active' }}>
-            Architettura
+          <Link to="/espositore" activeProps={{ className: 'active' }}>
+            Area espositore
+          </Link>
+          <Link to="/scansione" activeProps={{ className: 'active' }}>
+            Scansione stand
           </Link>
         </nav>
       </header>
-      <main>
+      <main id="main-content">
         <Outlet />
       </main>
+      <footer className="site-footer"><span>ARCADE MILANO 2026</span><span>Un’unica piattaforma, dati condivisi.</span><Link to="/" className="footer-link">Stato servizi</Link></footer>
     </div>
   )
 }

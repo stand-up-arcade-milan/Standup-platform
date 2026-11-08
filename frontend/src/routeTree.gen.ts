@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as CommercialeRouteImport } from './routes/commerciale'
+import { Route as EspositoreRouteImport } from './routes/espositore'
+import { Route as ScansioneRouteImport } from './routes/scansione'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +25,59 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommercialeRoute = CommercialeRouteImport.update({
+  id: '/commerciale',
+  path: '/commerciale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EspositoreRoute = EspositoreRouteImport.update({
+  id: '/espositore',
+  path: '/espositore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScansioneRoute = ScansioneRouteImport.update({
+  id: '/scansione',
+  path: '/scansione',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/commerciale': typeof CommercialeRoute
+  '/espositore': typeof EspositoreRoute
+  '/scansione': typeof ScansioneRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/commerciale': typeof CommercialeRoute
+  '/espositore': typeof EspositoreRoute
+  '/scansione': typeof ScansioneRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/commerciale': typeof CommercialeRoute
+  '/espositore': typeof EspositoreRoute
+  '/scansione': typeof ScansioneRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about'
+  fullPaths: '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about'
-  id: '__root__' | '/' | '/about'
+  to: '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
+  id:
+    '__root__' | '/' | '/about' | '/commerciale' | '/espositore' | '/scansione'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CommercialeRoute: typeof CommercialeRoute
+  EspositoreRoute: typeof EspositoreRoute
+  ScansioneRoute: typeof ScansioneRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +96,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/commerciale': {
+      id: '/commerciale'
+      path: '/commerciale'
+      fullPath: '/commerciale'
+      preLoaderRoute: typeof CommercialeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/espositore': {
+      id: '/espositore'
+      path: '/espositore'
+      fullPath: '/espositore'
+      preLoaderRoute: typeof EspositoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scansione': {
+      id: '/scansione'
+      path: '/scansione'
+      fullPath: '/scansione'
+      preLoaderRoute: typeof ScansioneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CommercialeRoute: CommercialeRoute,
+  EspositoreRoute: EspositoreRoute,
+  ScansioneRoute: ScansioneRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

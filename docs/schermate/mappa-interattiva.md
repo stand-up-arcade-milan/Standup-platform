@@ -19,3 +19,4 @@
 - Distinguere dato non disponibile, area senza conteggi e area con conteggio pari a zero.
 - Non esporre coordinate personali o tracce individuali. L'affollamento è aggregato.
 - La mappa di calore per stand e padiglioni è una vista direzionale/report, con fonte e aggiornamento; non va mostrata come dato live se il contratto non lo garantisce.
+- `GET /mappa` restituisce padiglioni con la proprietà `stands` e i varchi associati. La superficie proviene dal layout dell’edizione o dall’anagrafica stand; la capienza può essere `null` perché non è presente nella fonte.

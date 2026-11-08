@@ -2,7 +2,7 @@
 
 Schede funzionali per le schermate dell'MVP ARCADE Milano 2026. Sono basate su [requisiti MVP](../requisiti-mvp.md), [blueprint](../blueprint-digitale.md), [requisiti frontend](../frontend-portale.md) e [contratto API](../openapi.yaml).
 
-Le schermate descritte non sono ancora implementate: i nomi servono a riconoscere le viste, non fissano gli URL frontend. Le API citate sono quelle della bozza OpenAPI e non implicano che siano già implementate. Se manca un endpoint necessario, la scheda lo segnala per l'allineamento BID–BAD.
+Le schede descrivono il perimetro delle viste. I punti 4, 5 e 6 sono implementati in React alle route `/commerciale`, `/espositore` e `/scansione`. I punti 7, 8 e 9 restano linee guida funzionali senza codice; i punti 1, 2 e 3 sono assegnati a un altro gruppo. Le altre schede restano specifiche per le attivita non ancora sviluppate.
 
 ## Schermate
 
@@ -20,11 +20,11 @@ Le schermate descritte non sono ancora implementate: i nomi servono a riconoscer
 | Espositore | [Area espositore](area-espositore.md) | Espositore | React |
 | Espositore | [Contatti e lead](contatti-espositore.md) | Espositore | React |
 | Staff | [Operatività evento](operativita-staff.md) | Staff | React |
-| Staff | [Scansione allo stand](scansione-stand.md) | Staff, espositore autorizzato | Web mobile React o Power Apps, da validare |
+| Staff | [Scansione allo stand](scansione-stand.md) | Staff, espositore autorizzato | React responsive (`/scansione`) |
 | Staff | [Verifica biglietti e accessi](verifica-accessi.md) | Staff autorizzato | Client operativo da definire |
-| Commerciale | [Back office commerciale](backoffice-commerciale.md) | Commerciale | Power Apps |
-| Commerciale | [Scheda pratica](scheda-pratica.md) | Commerciale | Power Apps |
-| Commerciale | [Listino e planimetria stand](listino-stand.md) | Commerciale | Power Apps |
+| Commerciale | [Back office commerciale](backoffice-commerciale.md) | Commerciale | React (`/commerciale`) |
+| Commerciale | [Scheda pratica](scheda-pratica.md) | Commerciale | Integrata in React (`/commerciale`) |
+| Commerciale | [Listino e planimetria stand](listino-stand.md) | Commerciale | Integrata in React (`/commerciale`) |
 | Direzione | [Cruscotto direzionale](cruscotto-direzione.md) | Direzione | Power BI |
 | Direzione | [Report](report.md) | Direzione, ruoli autorizzati | Power BI |
 | Amministrazione | [Configurazione e avvisi](amministrazione.md) | Amministratore | Client da definire |
