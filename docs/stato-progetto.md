@@ -8,7 +8,7 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 - BAD calcola i KPI e li invia a BID. BID conserva e serve i KPI tramite API; i client non ricalcolano le formule.
 - Stack deciso: Java 21 e Spring Boot; PostgreSQL; React e TypeScript con Bun, Vite e TanStack Router; Docker Compose per l'avvio locale.
 - Le schermate 4, 5 e 6 sono implementate in React: `/commerciale`, `/espositore`, `/scansione`. Le schermate 7, 8 e 9 hanno specifiche funzionali senza implementazione; le schermate 1, 2 e 3 sono assegnate a un altro membro.
-- `docs/openapi.yaml` è il contratto condiviso: descrive 50 percorsi e 54 operazioni con handler nel controller Java. La corrispondenza di ogni risposta/schema non è verificata automaticamente e l’approvazione congiunta resta aperta nell’[issue #10](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10).
+- `docs/openapi.yaml` è il contratto condiviso: descrive 52 percorsi e 56 operazioni. La suite di integrazione invoca tutte le operationId e fallisce se il contratto aggiunge un’operazione senza test; restano da concordare congiuntamente i KPI nell’[issue #10](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10).
 
 ## Lavoro completato
 
@@ -22,18 +22,26 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 ### API Java
 
 - Il backend implementa accesso pubblico, espositori, pratiche commerciali, biglietteria e accessi, scansioni e simulatori, KPI, avvisi, amministrazione e integrazione BID-BAD.
-- Migrazioni database da V001 a V014. V014 imposta un `search_path` stabile per i trigger commerciali.
-- Le risposte d'errore usano una struttura comune. Ruoli e bearer token sono verificati dal backend; JWT HS256 locale non è l’autenticazione aziendale OIDC/JWKS.
-- Le migrazioni definiscono ruoli e policy RLS, ma Compose collega Spring con `arcade_admin`. Nel codice non risulta l’attivazione del ruolo `arcade_espositore` né l’impostazione transazionale di `arcade.id_espositore`; quindi le policy RLS non forniscono oggi un isolamento DB effettivo per le query API. Alcune query filtrano per espositore a livello applicativo, ma RNF-02 va verificato con un ruolo DB a privilegi minimi e test di isolamento.
+- Migrazioni database da V001 a V023. V015 introduce ruoli DB a privilegi minimi, RLS e audit; V016 riconcilia le proiezioni dei report; V017 archivia i PDF; V018–V023 correggono e provano i privilegi dei flussi reali e l’isolamento dei contratti storici.
+- Compose collega Spring al login DB `arcade_app` (NOINHERIT); per ogni richiesta il controller imposta un ruolo DB dedicato nella transazione. L’identità espositore è passata in `arcade.id_espositore` e le policy RLS limitano pratiche, documenti, pagamenti, contratti storici e contatti al tenant autenticato.
+- Gli account espositore usano JWT HS256 emessi dopo la verifica password; anche i token interni HS256 sono disponibili solo con l’opzione di sviluppo locale. Per i ruoli aziendali è supportata la verifica OIDC/JWKS RS256 con issuer, audience e URI JWKS configurati. L’identity provider reale e il mapping dei ruoli devono ancora essere concordati e configurati.
+- Le risposte d'errore usano una struttura comune. Gli accessi a dati personali e le operazioni amministrative registrano azione, ruolo, risorsa e riferimento pseudonimizzato; non vengono registrati token, corpi o indirizzi email.
 - Gli export BID pseudonimizzano i riferimenti di ticket e ordine; i record esportati non devono contenere email, anagrafiche commerciali o QR in chiaro.
 - Gli array PostgreSQL restituiti dalle query vengono convertiti in array JSON; il ricevitore KPI salva correttamente anche gli array `flagQualita` con tipo `text[]`.
 
 ### Frontend
 
-- `/commerciale`: richieste, pratiche, listino, assegnazioni e planimetria; le API pubbliche degli espositori continuano a essere mostrate anche quando manca il token per le API interne.
-- `/espositore`: login, accettazione/recupero account, contratto, contatti, indicatori condivisi e stato dei documenti.
+- `/commerciale`: richieste, pratiche, listino, assegnazioni e planimetria; genera offerte PDF, le archivia e permette il download autenticato. Le API pubbliche degli espositori restano mostrate anche senza token interno.
+- Il passaggio applicativo a `FIRMATA` archivia anche un riepilogo informativo; acconti e rinnovi restano collegati alla pratica. Questo flusso non raccoglie o verifica la firma elettronica.
+- `/espositore`: login, accettazione/recupero account, contratto, download dei propri documenti, contatti consentiti, indicatori condivisi e serie di presenze PREMIUM.
 - `/scansione`: lettura QR da fotocamera o inserimento manuale, scelta stand, consenso e lead magnet. Il token non viene salvato oltre la scheda corrente.
 - La palette e le schede funzionali sono in `docs/palette-colori.md` e `docs/schermate/`.
+
+### Report e documenti commerciali
+
+- `docs/struttura-report.md` definisce pagine, dati, fonti, null, filtri, qualità e regole di confronto. `v_bi_stand` preferisce scansioni granulari ai totali storici sovrapposti e segnala la scelta; `v_bi_commerciale` conserva gli importi storici firmati e non inventa acconti o saldi mancanti.
+- La suite integrata confronta stand/report, stato e importi commerciali e il portale espositore. Il fixture include 99 visite storiche sovrapposte a due scansioni: l’export deve restituire due visite, un contatto con consenso e il flag di sovrapposizione.
+- Le offerte sono PDF informativi, archiviati in PostgreSQL come documento immutabile con MIME, dimensione e SHA-256; download con controllo tenant, `no-store`, `nosniff` ed ETag. Il riepilogo creato quando una pratica passa a `FIRMATA` non è il contratto originale firmato e non attua una firma elettronica.
 
 ## Decisioni che impattano gli altri gruppi
 
@@ -42,7 +50,7 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 - Non inviare dati personali nei lotti KPI. Le dimensioni concordate possono contenere codici di area/stand, mai email o nominativi.
 - Regole e livelli di accesso vanno applicati lato server. Nascondere un controllo nella UI non autorizza una richiesta API.
 - Il listino incompleto e i contratti non riconciliabili non sono dati attivi. L'edizione 2026 resta pianificata senza date finche la fonte non le conferma.
-- L'autenticazione aziendale OIDC/JWKS, la consegna email e l'archivio/download documenti sono dipendenze ancora da definire. Il JWT HS256 predefinito serve solo allo sviluppo locale e non sostituisce l'integrazione aziendale.
+- Configurare i valori dell’identity provider aziendale OIDC/JWKS e il provider email. Concordare il modello e la procedura legale per caricare/validare il documento contrattuale originale firmato; i PDF generati sono bozze/riepiloghi informativi, non sostituiscono quel documento.
 
 ## Avvio e verifica
 
@@ -89,9 +97,9 @@ cd ..
 npx --yes @redocly/cli@2.64.1 lint --extends minimal docs/openapi.yaml
 ```
 
-La CI esegue anche Compose smoke test: `docker compose config --quiet`, build delle immagini e richieste a `/api/v1/health` e `/actuator/health` passando dal frontend.
+La CI e il test locale eseguono anche la suite completa su un progetto Compose isolato e fixture sintetici, senza accedere al volume `standup-import`. I container di test vengono fermati a fine esecuzione; il volume di test resta disponibile per diagnosi.
 
-Esiti di verifica registrati per questa implementazione: `bun run build`, `mvn -B -ntp verify` e lint OpenAPI sono passati. Maven esegue ora 10 test automatici Java (JWT e ruoli, formato errori, health pubblico, export pseudonimizzato, array PostgreSQL e idempotenza KPI); tutti passano e la CI li lancia nel job backend con `mvn verify`. Newman ha eseguito gli 8 casi della collection con 25 asserzioni superate. I cinque export sono stati inoltre richiesti con dati importati: JSON valido, campi personali assenti, fingerprint HMAC di 64 caratteri e `flagQualita` come array. La UI delle route implementate e' stata verificata con browser headless.
+Esiti verificati in questa sessione: build Bun/TypeScript, `mvn -B -ntp verify` (15 test Java), lint Redocly e suite Compose passati. La suite esercita 56/56 `operationId` OpenAPI (70 richieste, incluse ripetizioni per idempotenza, ruoli e verifica audit), i flussi commerciale/documenti, accessi/scansione e post-fiera/report/portale, la riconciliazione tra viste e l’isolamento tenant. Newman ha eseguito 8 richieste e 25 asserzioni. Il workflow GitHub esegue questi stessi controlli su ogni push/PR; la verifica delle API esterne Power Apps/Power BI non è simulata.
 
 ### Collection Postman BID-BAD
 

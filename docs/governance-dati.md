@@ -36,15 +36,18 @@ Privacy by design nel database, non solo nell'applicazione.
 
 | Ruolo | Che cosa vede |
 |---|---|
-| `arcade_espositore` | Solo il proprio stand e i propri contatti utilizzabili per il marketing. Non vede biglietti, accessi né email |
-| `arcade_lettura` | Tutte le tabelle tranne le email |
-| `arcade_dati_personali` | Tutto, comprese le email |
+| `arcade_espositore` | Solo pratiche, documenti, pagamenti, stand e contatti ammessi del tenant corrente; le email sono leggibili solo nei contatti che superano le regole di condivisione |
+| `arcade_lettura` | Tabelle operative e storiche esplicitamente concesse; escluse email, registrazioni e richieste riservate |
+| `arcade_dati_personali` | Dati personali solo per le operazioni applicative autorizzate e tracciate |
 
 - **Minimizzazione.** Il registro dei biglietti non contiene nome né contatto del titolare. Le email stanno in `contatto_riservato`, separate dal resto.
-- **Filtro per espositore.** Le policy Row Level Security sono definite dalle migrazioni V006–V009, ma non sono attive come barriera per il backend attuale: Compose configura Spring con `arcade_admin` e il codice non imposta `arcade.id_espositore` né assume il ruolo `arcade_espositore`. Alcune query filtrano a livello applicativo. Prima di dichiarare l’isolamento DB completato, usare un ruolo DB non proprietario, impostare il contesto in modo transazionale e provarlo con due espositori diversi (issue [#30](https://github.com/stand-up-arcade-milan/Standup-platform/issues/30)).
+- **Filtro per espositore.** Compose usa il login DB non proprietario `arcade_app` con `NOINHERIT`. Il controller imposta un ruolo tecnico con `SET LOCAL ROLE` dentro la transazione e valorizza `arcade.id_espositore`; le policy RLS limitano le query al tenant. V015–V023 applicano le policy runtime e isolano anche i contratti storici. La suite integrata prova lettura del tenant corretto e rifiuto della pratica per il tenant diverso (issue [#30](https://github.com/stand-up-arcade-milan/Standup-platform/issues/30)).
+- **Audit.** Letture autorizzate di dati personali e operazioni amministrative registrano azione, ruolo, risorsa e riferimento pseudonimizzato. Non vengono registrati token, corpi richiesta, email o IP.
 - **Minori.** I contatti di ragazzi di 14-17 anni non sono mai utilizzabili per il marketing, con un controllo automatico a ogni importazione.
 - **Staging.** Si elimina a fine caricamento, perché contiene le email.
 - **Repository.** I file CSV non si versionano. Il report di qualità contiene solo conteggi.
+
+La verifica RLS è stata eseguita su un database di test sintetico. Il database storico `standup-import` e gli export personali restano separati. Prima dell'uso reale vanno definiti il periodo di conservazione e le procedure di rettifica/cancellazione con il titolare del trattamento.
 
 ## Decisioni
 
