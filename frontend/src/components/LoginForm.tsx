@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthProvider';
 
 export type LoginFormProps = {
@@ -9,7 +9,7 @@ export type LoginFormProps = {
 
 export function LoginForm({
   title = 'Entra nella tua area',
-  subtitle = 'Usa l\\'account associato al tuo invito.',
+  subtitle = "Usa l'account associato al tuo invito.",
   showRecoveryLink = true,
 }: LoginFormProps) {
   const { login, isLoading, error, setAuthMode } = useAuth();

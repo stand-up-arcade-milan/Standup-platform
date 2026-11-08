@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import {
   login,
   loginWithOAuth,
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSuccess();
     try {
       await requestPasswordRecovery(email);
-      setSuccessMessage('Richiesta registrata. Se l\\'account esiste, riceverai un link.');
+      setSuccessMessage("Richiesta registrata. Se l'account esiste, riceverai un link.");
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Richiesta non riuscita.');
     } finally {

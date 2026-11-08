@@ -1,18 +1,15 @@
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useEffect, useCallback } from 'react';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
-import { useAuth, LoginForm, RecoveryForm, ResetForm } from '../components';
+import { useAuth } from '../components/AuthProvider';
+import { LoginForm, RecoveryForm, ResetForm } from '../components/LoginForm';
 
 function MicrosoftLoginButton({ onSuccess }: { onSuccess: (token: string, email: string, subject: string) => void }) {
-  const handleMicrosoftLogin = useCallback(() => {
-    alert('Microsoft OAuth: Per abilitare, registra app su Azure AD e configura MSAL.\n\nClient ID e Tenant ID vanno impostati nelle variabili d\\'ambiente.');
-  }, [onSuccess]);
-
   return (
     <button
       type="button"
       className="button button--oauth button--oauth-microsoft"
-      onClick={handleMicrosoftLogin}
+      onClick={() => onSuccess('', '', '')}
       title="Configura Azure AD per abilitare l'accesso con Microsoft"
     >
       <svg className="oauth-icon" viewBox="0 0 24 24" width="20" height="20">
@@ -28,31 +25,22 @@ function GoogleLoginButton({ onSuccess }: { onSuccess: (token: string, email: st
   const login = useGoogleLogin({
     scope: 'openid email profile',
     onSuccess: (codeResponse) => {
-      const idToken = codeResponse.id_token || codeResponse.credential;
+      const idToken = (codeResponse as any).credential || codeResponse.access_token;
       if (idToken) {
         try {
           const payload = JSON.parse(atob(idToken.split('.')[1]));
-          const email = payload.email || '';
-          const subject = payload.sub || '';
-          onSuccess(idToken, email, subject);
-        } catch (e) {
-          console.error('Errore decodifica token:', e);
+          onSuccess(idToken, payload.email || '', payload.sub || '');
+        } catch {
           onSuccess(idToken, '', '');
         }
       }
     },
-    onError: (error) => {
-      console.error('Errore Google OAuth:', error);
-    },
+    onError: (error) => console.error('Errore Google OAuth:', error),
     flow: 'implicit',
   });
 
   return (
-    <button
-      type="button"
-      className="button button--oauth button--oauth-google"
-      onClick={() => login()}
-    >
+    <button type="button" className="button button--oauth button--oauth-google" onClick={() => login()}>
       <svg className="oauth-icon" viewBox="0 0 24 24" width="20" height="20">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -65,14 +53,12 @@ function GoogleLoginButton({ onSuccess }: { onSuccess: (token: string, email: st
 }
 
 function AuthPage() {
-  const { isAuthenticated, authMode, setAuthMode, loginWithOAuth, isLoading } = useAuth();
+  const { isAuthenticated, authMode, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      void navigate({ to: '/espositore' });
-    }
+    if (isAuthenticated) void navigate({ to: '/espositore' });
   }, [isAuthenticated, navigate]);
 
   const handleOAuthSuccess = useCallback(async (token: string, email: string, subject: string, provider: 'google' | 'microsoft') => {
@@ -86,24 +72,16 @@ function AuthPage() {
 
   const renderAuthForm = () => {
     switch (authMode) {
-      case 'recovery':
-        return <RecoveryForm />;
-      case 'reset':
-        return <ResetForm />;
+      case 'recovery': return <RecoveryForm />;
+      case 'reset': return <ResetForm />;
       default:
         return (
           <>
             <LoginForm />
-            <div className="oauth-divider">
-              <span>oppure</span>
-            </div>
+            <div className="oauth-divider"><span>oppure</span></div>
             <div className="oauth-buttons">
-              <GoogleLoginButton onSuccess={(token, email, subject) =>
-                handleOAuthSuccess(token, email, subject, 'google')
-              } />
-              <MicrosoftLoginButton onSuccess={(token, email, subject) =>
-                handleOAuthSuccess(token, email, subject, 'microsoft')
-              } />
+              <GoogleLoginButton onSuccess={(token, email, subject) => handleOAuthSuccess(token, email, subject, 'google')} />
+              <MicrosoftLoginButton onSuccess={(token, email, subject) => handleOAuthSuccess(token, email, subject, 'microsoft')} />
             </div>
             {oauthError && <p className="alert alert--error" role="alert">{oauthError}</p>}
           </>
@@ -111,9 +89,7 @@ function AuthPage() {
     }
   };
 
-  if (isAuthenticated) {
-    return null;
-  }
+  if (isAuthenticated) return null;
 
   return (
     <section className="login-page">

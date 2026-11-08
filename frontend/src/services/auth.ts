@@ -23,7 +23,6 @@ export type ResetCredentials = {
   password: string;
 };
 
-const EXHIBITOR_TOKEN_KEY = 'standup.exhibitor.token';
 
 export function getAuthToken(): string | null {
   return readToken('exhibitor');
