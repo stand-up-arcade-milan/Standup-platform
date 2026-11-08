@@ -18,6 +18,14 @@ arcade:
     audience: ${ARCADE_OIDC_AUDIENCE:}
     roles-claim: ${ARCADE_OIDC_ROLES_CLAIM:roles}
     exhibitor-id-claim: ${ARCADE_OIDC_EXHIBITOR_ID_CLAIM:idEspositore}
+  social:
+    # Accesso degli espositori con un account Google o Microsoft. Il client id e la
+    # destinazione attesa nell'ID token: senza, il fornitore resta spento e /auth/google
+    # o /auth/microsoft rispondono 503 invece di fidarsi di un token non verificato.
+    google:
+      client-id: ${ARCADE_GOOGLE_CLIENT_ID:}
+    microsoft:
+      client-id: ${ARCADE_MICROSOFT_CLIENT_ID:}
 
 server:
   # Vite and the browser reach this port through Compose's published host port.

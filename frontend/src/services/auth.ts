@@ -7,11 +7,13 @@ export type LoginCredentials = {
   password: string;
 };
 
+/**
+ * Al server va solo l'ID token: e lui a verificarne la firma e a ricavarne identificativo
+ * ed email. Mandare email o subject dal browser significherebbe farsi credere sulla parola.
+ */
 export type OAuthCredentials = {
   provider: 'google' | 'microsoft';
   token: string;
-  email: string;
-  subject: string;
 };
 
 export type RecoveryCredentials = {
@@ -44,11 +46,7 @@ export async function loginWithOAuth(credentials: OAuthCredentials): Promise<{ a
   const endpoint = credentials.provider === 'google' ? '/auth/google' : '/auth/microsoft';
   const result = await api<{ accessToken: string }>(endpoint, {
     method: 'POST',
-    body: JSON.stringify({
-      token: credentials.token,
-      email: credentials.email,
-      subject: credentials.subject,
-    }),
+    body: JSON.stringify({ token: credentials.token }),
   });
   return result;
 }

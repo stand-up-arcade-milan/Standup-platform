@@ -49,6 +49,7 @@ public class ApiFailureHandler {
             case 404 -> "Risorsa non trovata";
             case 409 -> "Conflitto";
             case 429 -> "Troppe richieste";
+            case 503 -> "Servizio non disponibile";
             default -> "Errore del server";
         };
     }

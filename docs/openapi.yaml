@@ -452,6 +452,58 @@ paths:
               schema: { $ref: '#/components/schemas/Problem' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /auth/google:
+    post:
+      tags: [Autenticazione]
+      summary: Accede con un account Google gia collegato a un espositore
+      description: |
+        Il client invia solo l'ID token ricevuto da Google. Il server ne verifica la firma
+        contro le chiavi pubbliche del fornitore e ricava da li identificativo stabile ed email:
+        non accetta email o subject dal corpo della richiesta. L'account deve gia esistere,
+        creato dall'invito; questo percorso non registra nuovi espositori.
+      operationId: loginConGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccessoConFornitore' }
+      responses:
+        '200':
+          description: Token JWT a scadenza breve
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '503': { $ref: '#/components/responses/FornitoreNonConfigurato' }
+
+  /auth/microsoft:
+    post:
+      tags: [Autenticazione]
+      summary: Accede con un account Microsoft gia collegato a un espositore
+      description: |
+        Come /auth/google, con le chiavi pubbliche di Microsoft. Vale per gli account
+        aziendali Entra ID oltre che per quelli personali.
+      operationId: loginConMicrosoft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccessoConFornitore' }
+      responses:
+        '200':
+          description: Token JWT a scadenza breve
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '503': { $ref: '#/components/responses/FornitoreNonConfigurato' }
+
   /auth/invito/accetta:
     post:
       tags: [Autenticazione]
@@ -1563,6 +1615,11 @@ components:
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
+    FornitoreNonConfigurato:
+      description: Il fornitore di identita non e configurato su questo ambiente
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
     NotFound:
       description: Risorsa non trovata o non visibile al chiamante
       content:
@@ -1786,6 +1843,18 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, format: password, minLength: 12 }
+    AccessoConFornitore:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          writeOnly: true
+          description: |
+            ID token in formato JWT emesso dal fornitore. Il server verifica firma, emittente,
+            destinatario e scadenza, e ricava da qui subject ed email: email e subject inviati
+            dal client verrebbero ignorati, quindi non vanno inviati.
     AccettazioneInvito:
       type: object
       required: [token, password]

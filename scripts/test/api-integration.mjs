@@ -50,9 +50,13 @@ async function call(operationId, method, path, role, body, expectedStatus) {
   if (typeof raw === 'string' && raw.length) {
     try { json = JSON.parse(raw) } catch { /* A status assertion below reports unexpected text. */ }
   }
-  if (response.status >= 500) throw new Error(`${operationId}: HTTP ${response.status} ${JSON.stringify(json ?? raw)}`)
+  const accepted = expectedStatus === undefined ? [] : (Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus])
+  // Un 5xx atteso e un esito previsto, per esempio il 503 di un fornitore di identita
+  // non configurato su questo ambiente. Un 5xx non atteso resta un errore della suite.
+  if (response.status >= 500 && !accepted.includes(response.status)) {
+    throw new Error(`${operationId}: HTTP ${response.status} ${JSON.stringify(json ?? raw)}`)
+  }
   if (expectedStatus !== undefined) {
-    const accepted = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus]
     assert.ok(accepted.includes(response.status), `${operationId}: atteso HTTP ${accepted.join('/')} ricevuto ${response.status}: ${JSON.stringify(json ?? raw)}`)
   }
   if (json?.code === 'ROTTA_NON_TROVATA') throw new Error(`${operationId}: il controller non riconosce ${method} ${path}`)
@@ -118,6 +122,18 @@ for (let attempt = 0; attempt < 5; attempt += 1) {
 }
 const rateLimitedLogin = await call('loginEspositore', 'POST', '/auth/login', null, { email: rateLimitEmail, password: 'incorrect-password-for-ci' }, 429)
 expect(rateLimitedLogin.body?.code === 'TROPPI_TENTATIVI', 'login: il blocco non usa il codice di errore previsto')
+// Accesso con un fornitore esterno. Un token inventato non deve mai diventare un accesso:
+// 401 se il fornitore e configurato su questo ambiente, 503 se non lo e. Un 200 qui
+// significherebbe che il server si fida di cio che gli manda il client.
+for (const [operationId, path] of [['loginConGoogle', '/auth/google'], ['loginConMicrosoft', '/auth/microsoft']]) {
+  const esito = await call(operationId, 'POST', path, null, { token: `token-inventato-${suffix}` }, [401, 503])
+  assert.ok(
+    ['TOKEN_ESTERNO_NON_VALIDO', 'ACCESSO_ESTERNO_NON_CONFIGURATO'].includes(esito.body?.code),
+    `${operationId}: codice di errore inatteso ${esito.body?.code}`,
+  )
+  assert.equal(esito.body?.accessToken, undefined, `${operationId}: un token non verificato non deve produrre un accesso`)
+}
+
 await call('acceptInvitoEspositore', 'POST', '/auth/invito/accetta', null, { token: `missing-${suffix}`, password: 'Valid-password-for-CI-2026' }, 404)
 await call('requestPasswordRecovery', 'POST', '/auth/password/recupero', null, { email: `missing-${suffix}@example.invalid` }, 202)
 await call('resetPassword', 'POST', '/auth/password/reimposta', null, { token: `missing-${suffix}`, password: 'Valid-password-for-CI-2026' }, 409)

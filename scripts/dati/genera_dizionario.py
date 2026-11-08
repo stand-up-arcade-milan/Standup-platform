@@ -89,16 +89,8 @@ sql+=[") AS d (tabella, colonna, descrizione, sensibilita, titolare)",
 "    IF mancanti IS NOT NULL THEN RAISE EXCEPTION 'Colonne senza descrizione nel dizionario: %', mancanti; END IF;",
 "END $$;",""]
 open('database/migrations/V005__dizionario_dati.sql','w',encoding='utf-8').write("\n".join(sql))
-md=["# Dizionario dati","",
-"Descrive ogni colonna del database: significato, livello di sensibilità e titolare. È generato da `scripts/dati/genera_dizionario.py` e vive anche nel database, nella tabella `arcade.dizionario_dati`.","",
-"| Livello | Significato | Chi può vederlo |","|---|---|---|",
-"| PUBBLICO | Può comparire sul portale | Tutti |",
-"| INTERNO | Dato operativo senza persone identificabili | Organizzazione e team |",
-"| RISERVATO | Quasi-identificatore o dato di uno solo | Proprietario, oppure solo aggregato |",
-"| PERSONALE | Identifica una persona | Solo il responsabile dei dati |",""]
-for t,(own,desc,lvl,cols) in T.items():
-    md+=[f"## {t}","",f"{desc}. Titolare: {own}. Livello della tabella: {lvl}.","","| Colonna | Descrizione | Livello |","|---|---|---|"]
-    md+=[f"| `{c[0]}` | {c[1]} | {c[2] if len(c)>2 else lvl} |" for c in cols]
-    md.append("")
-open('docs/dizionario-dati.md','w',encoding='utf-8').write("\n".join(md))
+# Il documento leggibile non si genera piu qui: lo produce
+# scripts/dati/genera_doc_dizionario.py leggendo arcade.dizionario_dati dal database,
+# ed e il workflow "Database e documenti" a controllare che sia aggiornato.
+# Questo script si ferma alla migrazione V005.
 print(len(rows),"colonne")
