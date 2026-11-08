@@ -41,6 +41,7 @@ dati-storici/
 /frontend/dist/
 /scripts/dati/__pycache__/
 /.venv/
+/graphify-out/
 
 # Bozze sorgente locali del blueprint, non versionate
 /docs/fonti/ARCADE_Milano_Blueprint_v2.pdf

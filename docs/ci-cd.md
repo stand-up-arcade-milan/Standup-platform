@@ -17,6 +17,8 @@ La suite Java contiene 15 test automatici. La suite integrata invoca tutte le 56
 
 Il fixture contiene due fonti sovrapposte di visite stand (storico 99 e scanner 2): la proiezione deve preferire le scansioni, esporre il flag della sovrapposizione e contare un solo lead con consenso. I valori inseriti sono marcati `simulato` e `CI_SINTETICA`.
 
+La CI usa fixture sintetiche isolate; non legge i dati in dati-storici/ e non monta il volume locale standup-import_postgres_data. Le istruzioni per avviare la demo BID–BAD sulla LAN sono in [integrazione-bid-bad.md](integrazione-bid-bad.md).
+
 La suite locale riproduce il job integrato da PowerShell:
 
 ```powershell

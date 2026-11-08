@@ -12,6 +12,8 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 
 ## Lavoro completato
 
+Per i dettagli pratici di collaborazione BID–BAD, credenziali, paginazione e ambiente demo LAN vedere [integrazione-bid-bad.md](integrazione-bid-bad.md). La pipeline locale, le esclusioni e la collocazione dei dati sono in [trattamento-dati-ricevuti.md](trattamento-dati-ricevuti.md). La cache Graphify vive in graphify-out/ ed è locale/ignorata da Git.
+
 ### Dati locali
 
 - Gli export ricevuti sono stati normalizzati e importati nel volume PostgreSQL del progetto Compose locale `standup-import`.

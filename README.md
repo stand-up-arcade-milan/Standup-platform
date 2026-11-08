@@ -6,7 +6,7 @@ Piattaforma integrata per coordinare espositori, vendite, operatività e risulta
 
 **Team Stand up** · ARCADE Milano · 2026
 
-[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Schede schermate](docs/schermate/README.md) · [CI/CD](docs/ci-cd.md) · [Requisiti MVP](docs/requisiti-mvp.md) · [Modello ER](docs/modello-er.md)
+[Panoramica](#panoramica) · [Architettura](#architettura) · [Utenti](#ruoli-e-visibilita) · [KPI](#indicatori) · [Roadmap](#roadmap) · [Gruppo](#gruppo) · [Metodo GitHub](#metodo) · [Identità visiva](#identita-visiva) · [Blueprint digitale](docs/blueprint-digitale.md) · [Frontend](docs/frontend-portale.md) · [Schede schermate](docs/schermate/README.md) · [CI/CD](docs/ci-cd.md) · [Requisiti MVP](docs/requisiti-mvp.md) · [Modello ER](docs/modello-er.md) | [Integrazione BID-BAD](docs/integrazione-bid-bad.md) | [Trattamento dati](docs/trattamento-dati-ricevuti.md)
 
 </div>
 

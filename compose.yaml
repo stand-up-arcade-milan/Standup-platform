@@ -33,7 +33,7 @@ services:
       ARCADE_AUTH_LOCAL_TOKENS_ENABLED: ${ARCADE_AUTH_LOCAL_TOKENS_ENABLED:-true}
       ARCADE_JWT_SECRET: ${ARCADE_JWT_SECRET:-local-development-secret-change-me-32-bytes}
     ports:
-      - "127.0.0.1:${API_PORT:-8080}:8080"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +51,7 @@ services:
     image: standup-platform-frontend:local
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${WEB_PORT:-5173}:5173"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:5173"
     depends_on:
       backend:
         condition: service_healthy
