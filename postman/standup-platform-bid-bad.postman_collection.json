@@ -1,0 +1,182 @@
+{
+  "info": {
+    "name": "Standup Platform - BID / BAD",
+    "description": "Verifica gli export BID destinati a BAD, l'autorizzazione BAD e la ricezione idempotente dei KPI. Usare solo su un ambiente locale o di test: il PUT KPI salva un lotto sintetico marcato simulato.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{badToken}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('kpiCalculatedAt')) {",
+          "  pm.collectionVariables.set('kpiCalculatedAt', new Date().toISOString());",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const name = pm.info.requestName;",
+          "const response = pm.response;",
+          "const body = (() => { try { return response.json(); } catch { return {}; } })();",
+          "const isFingerprint = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);",
+          "",
+          "if (name.startsWith('Export BID:')) {",
+          "  pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+          "  pm.test('risposta JSON con items', () => pm.expect(body.items).to.be.an('array'));",
+          "  pm.test('nessun campo personale o QR in chiaro', () => {",
+          "    const serialized = JSON.stringify(body).toLowerCase();",
+          "    ['email', 'ragionesociale', 'partitaiva', 'rawticketref', 'rawqr'].forEach(key => pm.expect(serialized).not.to.include(key));",
+          "  });",
+          "  if (!name.endsWith('qualita')) {",
+          "    pm.test('paginazione e edizione presenti', () => {",
+          "      pm.expect(body.edizione).to.be.a('number');",
+          "      pm.expect(body.page).to.be.an('object');",
+          "      pm.expect(body.page.limit).to.be.a('number');",
+          "    });",
+          "  }",
+          "  if (name.endsWith('vendite')) {",
+          "    pm.test('riferimenti vendita pseudonimizzati', () => body.items.forEach(item => {",
+          "      pm.expect(isFingerprint(item.ticketRef)).to.equal(true);",
+          "      pm.expect(isFingerprint(item.ordineRef)).to.equal(true);",
+          "    }));",
+          "  }",
+          "  if (name.endsWith('accessi')) {",
+          "    pm.test('riferimenti accesso pseudonimizzati', () => body.items.forEach(item => pm.expect(isFingerprint(item.ticketRef)).to.equal(true)));",
+          "  }",
+          "  if (name.endsWith('qualita')) {",
+          "    pm.test('qualita contiene solo aggregati', () => body.items.forEach(item => {",
+          "      pm.expect(item.edizione).to.be.a('number');",
+          "      pm.expect(item.conteggio).to.be.a('number');",
+          "      pm.expect(item.fonte).to.be.a('string');",
+          "      pm.expect(item.codice).to.be.a('string');",
+          "    }));",
+          "  }",
+          "} else if (name === 'Sicurezza: export senza token') {",
+          "  pm.test('senza token BAD la richiesta e rifiutata', () => pm.response.to.have.status(401));",
+          "} else if (name === 'BAD -> BID: invia lotto sintetico') {",
+          "  pm.test('lotto accettato o gia ricevuto', () => {",
+          "    pm.expect(response.code).to.be.oneOf([200, 201]);",
+          "    pm.expect(body.batchId).to.eql(pm.variables.get('batchId'));",
+          "    pm.expect(body.stato).to.be.oneOf(['ACCETTATO', 'GIA_RICEVUTO']);",
+          "    pm.expect(body.elementiAccettati).to.be.a('number');",
+          "  });",
+          "} else if (name === 'BAD -> BID: verifica idempotenza') {",
+          "  pm.test('lo stesso batch non viene duplicato', () => {",
+          "    pm.response.to.have.status(200);",
+          "    pm.expect(body.batchId).to.eql(pm.variables.get('batchId'));",
+          "    pm.expect(body.stato).to.eql('GIA_RICEVUTO');",
+          "    pm.expect(body.elementiAccettati).to.eql(0);",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "BID -> BAD: export dati",
+      "item": [
+        {
+          "name": "Export BID: vendite",
+          "request": {
+            "method": "GET",
+            "url": "{{apiBaseUrl}}/bi/dati/vendite?edizione={{exportEdition}}&limit={{limit}}&cursor={{cursor}}"
+          }
+        },
+        {
+          "name": "Export BID: accessi",
+          "request": {
+            "method": "GET",
+            "url": "{{apiBaseUrl}}/bi/dati/accessi?edizione={{exportEdition}}&limit={{limit}}&cursor={{cursor}}"
+          }
+        },
+        {
+          "name": "Export BID: stand",
+          "request": {
+            "method": "GET",
+            "url": "{{apiBaseUrl}}/bi/dati/stand?edizione={{exportEdition}}&limit={{limit}}&cursor={{cursor}}"
+          }
+        },
+        {
+          "name": "Export BID: commerciale",
+          "request": {
+            "method": "GET",
+            "url": "{{apiBaseUrl}}/bi/dati/commerciale?edizione={{exportEdition}}&limit={{limit}}&cursor={{cursor}}"
+          }
+        },
+        {
+          "name": "Export BID: qualita",
+          "request": {
+            "method": "GET",
+            "url": "{{apiBaseUrl}}/bi/dati/qualita?edizione={{exportEdition}}"
+          }
+        },
+        {
+          "name": "Sicurezza: export senza token",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{apiBaseUrl}}/bi/dati/vendite?edizione={{exportEdition}}&limit=1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BAD -> BID: ricezione KPI",
+      "item": [
+        {
+          "name": "BAD -> BID: invia lotto sintetico",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"edizione\": {{kpiEdition}},\n  \"calcolatoIl\": \"{{kpiCalculatedAt}}\",\n  \"formulaVersione\": \"{{kpiFormulaVersion}}\",\n  \"intervalloDatiDal\": null,\n  \"intervalloDatiAl\": null,\n  \"items\": [\n    {\n      \"codice\": \"visite_stand\",\n      \"valore\": 0,\n      \"unita\": \"visite\",\n      \"edizione\": {{kpiEdition}},\n      \"periodoDal\": null,\n      \"periodoAl\": null,\n      \"dimensioni\": { \"padiglione\": \"P1\" },\n      \"calcolatoIl\": \"{{kpiCalculatedAt}}\",\n      \"formulaVersione\": \"{{kpiFormulaVersion}}\",\n      \"fonte\": [\"POSTMAN_SMOKE\"],\n      \"qualita\": \"DA_VERIFICARE\",\n      \"flagQualita\": [\"SINTETICO_TEST\"],\n      \"stimato\": false,\n      \"simulato\": true,\n      \"nota\": \"Lotto sintetico Postman; non usare nei report.\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{apiBaseUrl}}/integrazioni/bad/kpi/{{batchId}}"
+          }
+        },
+        {
+          "name": "BAD -> BID: verifica idempotenza",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"edizione\": {{kpiEdition}},\n  \"calcolatoIl\": \"{{kpiCalculatedAt}}\",\n  \"formulaVersione\": \"{{kpiFormulaVersion}}\",\n  \"intervalloDatiDal\": null,\n  \"intervalloDatiAl\": null,\n  \"items\": [\n    {\n      \"codice\": \"visite_stand\",\n      \"valore\": 0,\n      \"unita\": \"visite\",\n      \"edizione\": {{kpiEdition}},\n      \"periodoDal\": null,\n      \"periodoAl\": null,\n      \"dimensioni\": { \"padiglione\": \"P1\" },\n      \"calcolatoIl\": \"{{kpiCalculatedAt}}\",\n      \"formulaVersione\": \"{{kpiFormulaVersion}}\",\n      \"fonte\": [\"POSTMAN_SMOKE\"],\n      \"qualita\": \"DA_VERIFICARE\",\n      \"flagQualita\": [\"SINTETICO_TEST\"],\n      \"stimato\": false,\n      \"simulato\": true,\n      \"nota\": \"Lotto sintetico Postman; non usare nei report.\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{apiBaseUrl}}/integrazioni/bad/kpi/{{batchId}}"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "apiBaseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "badToken", "value": "" },
+    { "key": "exportEdition", "value": "2025" },
+    { "key": "limit", "value": "100" },
+    { "key": "cursor", "value": "0" },
+    { "key": "kpiEdition", "value": "2026" },
+    { "key": "batchId", "value": "c91f97b9-7a3f-4c14-9ec7-1c5a6adf1e26" },
+    { "key": "kpiFormulaVersion", "value": "postman-smoke-1" }
+  ]
+}

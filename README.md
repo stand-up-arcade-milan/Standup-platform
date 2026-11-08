@@ -195,7 +195,7 @@ sequenceDiagram
 <a id="stack"></a>
 ## Stack tecnologico
 
-Avvia lo scheletro completo con `docker compose up --build`: PostgreSQL, API Spring Boot e frontend React partono insieme. Le credenziali predefinite sono condivise solo per lo sviluppo locale; un file `.env` facoltativo può sovrascriverle. Il container PostgreSQL carica `database/migrations/` solo quando inizializza un volume vuoto.
+Avvia lo stack completo con `docker compose up --build`: PostgreSQL, API Spring Boot e frontend React partono insieme. Le credenziali predefinite sono condivise solo per lo sviluppo locale; un file `.env` facoltativo può sovrascriverle. Il container PostgreSQL carica `database/migrations/` solo quando inizializza un volume vuoto.
 
 Per avviare solo il database e controllare che lo schema sia stato creato, con le credenziali predefinite:
 
@@ -546,9 +546,11 @@ Branch di lavoro:
 - [Requisiti del frontend](docs/frontend-portale.md): home, accesso per ruolo, area espositore, elenco con filtri, avvisi e dati da aggiungere, con le idee tratte da due portali fieristici.
 - [Schede delle schermate](docs/schermate/README.md): contenuti, azioni, ruoli, stati e API previsti per ciascuna schermata React, Power Apps e Power BI.
 - [CI/CD GitHub Actions](docs/ci-cd.md): controlli automatici su push/PR, smoke check Docker Compose e pubblicazione versionata delle immagini su GHCR.
+- [Stato progetto e handoff](docs/stato-progetto.md): stato aggiornato, decisioni condivise, servizi locali, procedure di verifica e prossimi passi.
+- [Collection Postman BID-BAD](postman/standup-platform-bid-bad.postman_collection.json): test degli export BID, dell'autorizzazione e dell'invio idempotente dei KPI.
 - [Dati storici](docs/dati-storici.md): i dati delle edizioni 2024 e 2025, che cosa permettono di calcolare, le anomalie e l'importazione con `scripts/dati/importa_storici.py`.
 - [Governance dei dati](docs/governance-dati.md): mappa delle fonti, pulizia, classificazione e sicurezza, con il [dizionario dati](docs/dizionario-dati.md) e il [report di qualità](docs/report-qualita-dati.md).
-- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore e, nella V007, pedane, sensori AI, pacchetti, registrazione del visitatore, lead magnet e MQL; nella V008 le correzioni dal contratto API e le scansioni 2026; nella V009 area commerciale, account degli espositori e KPI ricevuti da BAD.
+- [Migrazioni del database](database/migrations): schema PostgreSQL, viste dei KPI, ruoli, filtro per espositore, area commerciale e KPI BAD (V007–V009); storico commerciale, planimetria, idempotenza e recupero password (V010–V011); consenso alla scansione, metadati documentali senza archivio configurato e `search_path` stabile per i trigger (V012–V014).
 - [Contratto API OpenAPI](docs/openapi.yaml): richieste, risposte, schemi, sicurezza e scambio dati tra BID e BAD; bozza da allineare con entrambi i gruppi.
 - [Brief del laboratorio](docs/fonti/Progetto_Laboratorio_Integrato_BAD-BID_compilato.docx) e [Gantt](docs/fonti/Gantt-Stand-UP.pdf): consegna, responsabilità e milestone del progetto.
 
@@ -570,4 +572,4 @@ Codici ed esportazioni: [palette colori](docs/palette-colori.md).
 <a id="stato-del-progetto"></a>
 ## Stato del progetto
 
-SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro dell'MVP sono approvati. Schema dati, caricamento degli storici e documentazione dei dati sono nel repository. Lo scheletro tecnico è avviato: PostgreSQL in Docker con le migrazioni, bozza del contratto OpenAPI, backend Spring Boot e frontend React con Vite. Ora si sviluppano tabelle commerciali, API, back office e report, verso il SAL 2 del 4 dicembre.
+SAL 1 superato il 6 novembre 2026: requisiti, KPI e perimetro MVP sono approvati. In questa sessione sono stati importati e riconciliati i dati storici e commerciali nel database Docker locale, implementate in Java le 54 operazioni OpenAPI e realizzate in React le schermate 4, 5 e 6 (`/commerciale`, `/espositore`, `/scansione`). Le build Java e React e i controlli HTTP/headless sono passati. Le fonti cliente e il database restano locali ed esclusi da Git; il report aggregato di qualita e versionato. Le schermate 7, 8 e 9 restano specifiche senza codice.
