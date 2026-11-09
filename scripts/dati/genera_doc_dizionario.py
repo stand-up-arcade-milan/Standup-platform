@@ -17,7 +17,6 @@ Se una tabella non compare qui sotto in AREE, lo script lo segnala e la mette in
 from __future__ import annotations
 
 import argparse
-import datetime
 import pathlib
 import sys
 
@@ -182,8 +181,10 @@ def livello_tabella(colonne) -> str:
 def genera(tabelle, titolari) -> str:
     note = list(INTESTAZIONE.rstrip().split("\n"))
     note.append("")
-    note.append(f"Generato il {datetime.date.today().strftime('%d/%m/%Y')} "
-                f"su {len(tabelle)} tabelle e {sum(len(c) for c in tabelle.values())} colonne.")
+    # Nessuna data di generazione: l'output deve essere identico a parità di schema,
+    # altrimenti il controllo in CI segnala una differenza solo perché è cambiato il giorno.
+    note.append(f"Il database contiene {len(tabelle)} tabelle "
+                f"e {sum(len(c) for c in tabelle.values())} colonne.")
     note.append("")
 
     viste = dict(AREE)

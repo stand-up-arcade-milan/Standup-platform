@@ -18,7 +18,7 @@ python scripts/dati/genera_doc_dizionario.py --dsn postgresql://arcade_admin:arc
 | RISERVATO | Quasi-identificatore o dato di uno solo | Proprietario, oppure solo aggregato |
 | PERSONALE | Identifica una persona | Solo chi gestisce i dati personali |
 
-Generato il 09/11/2026 su 59 tabelle e 361 colonne.
+Il database contiene 59 tabelle e 361 colonne.
 
 ## Edizione e luoghi
 
