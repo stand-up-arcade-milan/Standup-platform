@@ -457,20 +457,46 @@ public class PlatformApiController {
     }
 
     private Object login(HttpServletRequest request, Map<String, Object> b) {
-        require(b,"email","password");
-        String email=text(b,"email").trim();
-        if(email.length()>320) throw new ApiFailure(400,"EMAIL_NON_VALIDA","L’indirizzo email supera il limite consentito.");
-        String rateKey=tokens.fingerprint("login-rate|"+request.getRemoteAddr()+"|"+email.toLowerCase(java.util.Locale.ROOT));
-        if(loginRateLimiter.blocked(rateKey)) throw new ApiFailure(429,"TROPPI_TENTATIVI","Troppi tentativi. Riprova più tardi.");
-        Map<String,Object> account=oneOrNull("SELECT a.id_espositore,a.password_hash,a.attivo FROM arcade.account_espositore a WHERE lower(a.email)=lower(?)", email);
-        if (account==null || !Boolean.TRUE.equals(account.get("attivo")) || !verifyPassword(text(b,"password"),String.valueOf(account.get("password_hash")))) {
-            loginRateLimiter.failed(rateKey);
-            throw new ApiFailure(401,"CREDENZIALI_NON_VALIDE","Email o password non valide.");
+        require(b, "email", "password");
+        String email = text(b, "email").trim();
+        if (email.length() > 320) throw new ApiFailure(400, "EMAIL_NON_VALIDA", "L’indirizzo email supera il limite consentito.");
+        
+        String rateKey = tokens.fingerprint("login-rate|" + request.getRemoteAddr() + "|" + email.toLowerCase(java.util.Locale.ROOT));
+        if (loginRateLimiter.blocked(rateKey)) throw new ApiFailure(429, "TROPPI_TENTATIVI", "Troppi tentativi. Riprova più tardi.");
+        
+        // 1. Cerca prima nella tabella direzione
+        Map<String, Object> account = oneOrNull(
+            "SELECT id_account AS id, password_hash, attivo, 'DIREZIONE' AS ruolo FROM arcade.account_direzione WHERE lower(email)=lower(?)", 
+            email
+        );
+        
+        // 2. Se non trovato, cerca nella tabella espositore
+        if (account == null) {
+            account = oneOrNull(
+                "SELECT id_espositore AS id, password_hash, attivo, 'ESPOSITORE' AS ruolo FROM arcade.account_espositore WHERE lower(email)=lower(?)", 
+                email
+            );
         }
+        
+        // 3. Verifica esistenza, stato attivo e password
+        if (account == null || !Boolean.TRUE.equals(account.get("attivo")) || !verifyPassword(text(b, "password"), String.valueOf(account.get("password_hash")))) {
+            loginRateLimiter.failed(rateKey);
+            throw new ApiFailure(401, "CREDENZIALI_NON_VALIDE", "Email o password non valide.");
+        }
+        
         loginRateLimiter.succeeded(rateKey);
-        String exhibitor=String.valueOf(account.get("id_espositore"));
-        db.update("UPDATE arcade.account_espositore SET ultimo_accesso=now() WHERE lower(email)=lower(?)",email);
-        return tokenResponse(tokens.issue(email,"ESPOSITORE",exhibitor,3600));
+        String id = String.valueOf(account.get("id"));
+        String ruolo = String.valueOf(account.get("ruolo"));
+        
+        // 4. Aggiorna ultimo accesso nella tabella corretta
+        if ("DIREZIONE".equals(ruolo)) {
+            db.update("UPDATE arcade.account_direzione SET ultimo_accesso=now() WHERE lower(email)=lower(?)", email);
+        } else {
+            db.update("UPDATE arcade.account_espositore SET ultimo_accesso=now() WHERE lower(email)=lower(?)", email);
+        }
+        
+        // 5. Emetti il token con il ruolo corretto
+        return tokenResponse(tokens.issue(email, ruolo, id, 3600));
     }
 
     private Object acceptInvite(Map<String, Object> b) {
