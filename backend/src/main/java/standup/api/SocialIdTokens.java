@@ -3,6 +3,7 @@ package standup.api;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -39,6 +40,7 @@ public class SocialIdTokens {
     private final JwtDecoder google;
     private final JwtDecoder microsoft;
 
+    @Autowired
     public SocialIdTokens(
             @Value("${arcade.social.google.client-id:}") String googleClientId,
             @Value("${arcade.social.microsoft.client-id:}") String microsoftClientId) {

@@ -18,7 +18,7 @@ python scripts/dati/genera_doc_dizionario.py --dsn postgresql://arcade_admin:arc
 | RISERVATO | Quasi-identificatore o dato di uno solo | Proprietario, oppure solo aggregato |
 | PERSONALE | Identifica una persona | Solo chi gestisce i dati personali |
 
-Generato il 08/11/2026 su 58 tabelle e 351 colonne.
+Generato il 09/11/2026 su 59 tabelle e 361 colonne.
 
 ## Edizione e luoghi
 
@@ -570,6 +570,23 @@ Token con cui il visitatore modifica o revoca i consensi. Titolare: Privacy. Liv
 | `usato_il` | `timestamp with time zone` | Data di consumo del token | RISERVATO |
 
 ## Identità e accesso
+
+### account_direzione
+
+Account di accesso della direzione di ARCADE. Titolare: Sicurezza. Livello della tabella: PERSONALE.
+
+| Colonna | Tipo | Descrizione | Livello |
+|---|---|---|---|
+| `id_account` | `uuid` | Identificativo dell'account | INTERNO |
+| `email` | `text` | Email di accesso | PERSONALE |
+| `password_hash` | `text` | Impronta della password, mai la password | RISERVATO |
+| `cognome` | `text` | Cognome della persona | PERSONALE |
+| `nome` | `text` | Nome della persona | PERSONALE |
+| `attivo` | `boolean` | Falso se l'account è disattivato | INTERNO |
+| `created_at` | `timestamp with time zone` | Orario di creazione | INTERNO |
+| `updated_at` | `timestamp with time zone` | Orario dell'ultima modifica | INTERNO |
+| `ultimo_accesso` | `timestamp with time zone` | Orario dell'ultimo accesso | INTERNO |
+| `email_verificata` | `boolean` | Vero se email verificata | INTERNO |
 
 ### account_espositore
 

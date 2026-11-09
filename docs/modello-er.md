@@ -199,7 +199,7 @@ erDiagram
 | Visitatori registrati | `registrazione_visitatore`, `registrazione_riservata`, `interesse_visitatore` | Consensi separati e interessi. Nome ed email stanno in una tabella riservata. |
 | Scansioni 2026 | `scansione_stand` | Una riga per scansione con operatore e biglietto pseudonimizzato. Le scansioni ripetute sono marcate `duplicata` e non contano. |
 | Area commerciale | `listino_voce`, `pratica`, `voce_pratica`, `documento_pratica`, `acconto`, `richiesta`, `richiesta_riservata` | Dalla richiesta dal sito alla pratica firmata, con listino, sconti, documenti e acconti. Nome ed email del richiedente stanno in una tabella riservata. |
-| Profilo e accesso | `profilo_espositore`, `categoria_espositore`, `espositore_categoria`, `account_espositore`, `invito_espositore`, `avviso` | Vetrina pubblica degli espositori, account con inviti monouso e avvisi di servizio. Password e token si conservano solo come impronta. |
+| Profilo e accesso | `profilo_espositore`, `categoria_espositore`, `espositore_categoria`, `account_espositore`, `account_direzione`, `invito_espositore`, `avviso` | Vetrina pubblica degli espositori, account con inviti monouso, account della direzione e avvisi di servizio. Password e token si conservano solo come impronta. |
 | KPI da BAD | `lotto_kpi`, `kpi_osservazione` | Lotti di indicatori ricevuti dall'API, ripetibili grazie al `batch_id`. Nessun dato personale. |
 | Servizio | `importazione`, `scarto_importazione`, `catalogo_anomalia`, `fascia_stand_mancante`, `dizionario_dati` | Tracciano i caricamenti, le righe scartate e le anomalie, e descrivono ogni colonna. |
 
@@ -540,6 +540,23 @@ erDiagram
     padiglione { text codice PK }
 ```
 
+### La V027: un account per la direzione
+
+La `V027` aggiunge `account_direzione`, la tabella con cui entra la direzione di ARCADE: email e password, separate dagli account degli espositori perché il ruolo è diverso e i poteri non si mescolano. Come per gli espositori, della password si conserva solo l'impronta.
+
+```mermaid
+erDiagram
+    account_direzione {
+        uuid id_account PK
+        text email
+        text password_hash
+        text cognome
+        text nome
+        boolean attivo
+        boolean email_verificata
+    }
+```
+
 | Regola | Dove è garantita |
 | --- | --- |
 | Lo stato della pratica va solo avanti: BOZZA, INVIATA, FIRMATA, ACCONTO_RICEVUTO | Trigger `pratica_controlla` |
@@ -559,7 +576,7 @@ erDiagram
 - **Dati personali separati.** Email e nome non stanno mai nelle tabelle usate per i calcoli: `contatto_riservato` e `registrazione_riservata` sono tabelle a parte. `registrazione_riservata` è leggibile solo dal ruolo `arcade_dati_personali`.
 - **Lo staff e i suoi turni non si vedono dal lato espositore.** `membro_staff`, `turno` e `assegnazione_turno` sono leggibili solo dai ruoli interni, i nomi solo da `arcade_dati_personali`.
 - **Lo staff e i suoi turni non si vedono dal lato espositore.** `membro_staff`, `turno` e `assegnazione_turno` sono leggibili solo dai ruoli interni, i nomi solo da `arcade_dati_personali`. Lo stesso vale per i token di accesso e per l'anagrafica in `espositore_riservato`.
-- **Account e listino restano fuori dalla lettura.** `account_espositore` e `invito_espositore` sono leggibili solo dal ruolo `arcade_autenticazione`, `richiesta_riservata` solo da `arcade_dati_personali`. Il listino, le richieste e i KPI non sono visibili agli espositori. `scansione_stand.operatore_id` e `ticket_ref` non sono leggibili dall'espositore.
+- **Account e listino restano fuori dalla lettura.** `account_espositore`, `account_direzione` e `invito_espositore` sono leggibili solo dal ruolo `arcade_autenticazione`, `richiesta_riservata` solo da `arcade_dati_personali`. Il listino, le richieste e i KPI non sono visibili agli espositori. `scansione_stand.operatore_id` e `ticket_ref` non sono leggibili dall'espositore.
 - **Un espositore vede solo il proprio.** Con la row-level security, l'espositore legge il proprio pacchetto, i sensori AI del proprio stand e i lead magnet di ARCADE Milano e i propri. Non vede mai le registrazioni dei visitatori, le pedane o le viste aggregate della direzione.
 - **La stima dal peso è solo PREMIUM.** La policy su `rilevazione_peso` lascia passare le righe solo se l'espositore ha il pacchetto PREMIUM per quell'edizione. Un espositore BASE non le vede nemmeno interrogando il database direttamente.
 - **Nessuna profilazione dei minori.** Il modulo di registrazione offre solo fasce d'età da 18 anni in su, e `profilabile` è vero solo con il consenso marketing e una fascia adulta dichiarata.
