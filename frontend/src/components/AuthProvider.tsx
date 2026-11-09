@@ -7,6 +7,7 @@ import {
   saveAuthToken,
   clearAuthToken,
   hasAuthToken,
+  getAuthRole,
   type AuthMode,
   type LoginCredentials,
   type OAuthCredentials,
@@ -14,6 +15,8 @@ import {
 
 type AuthContextType = {
   isAuthenticated: boolean;
+  /** Ruolo dell'utente, letto dal claim `role` del JWT (es. DIREZIONE, ESPOSITORE). */
+  role: string | null;
   isLoading: boolean;
   error: string | null;
   successMessage: string | null;
@@ -32,6 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasAuthToken());
+  const [role, setRole] = useState<string | null>(getAuthRole());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsAuthenticated(hasAuthToken());
+    setRole(getAuthRole());
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
@@ -52,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await login(credentials);
       saveAuthToken(result.accessToken);
       setIsAuthenticated(true);
+      setRole(getAuthRole());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Accesso non riuscito.');
       setIsAuthenticated(false);
@@ -68,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await loginWithOAuth(credentials);
       saveAuthToken(result.accessToken);
       setIsAuthenticated(true);
+      setRole(getAuthRole());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Accesso OAuth non riuscito.');
       setIsAuthenticated(false);
@@ -108,12 +115,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogout = useCallback(() => {
     clearAuthToken();
     setIsAuthenticated(false);
+    setRole(null);
     setError(null);
     setSuccessMessage(null);
   }, []);
 
   const value: AuthContextType = {
     isAuthenticated,
+    role,
     isLoading,
     error,
     successMessage,

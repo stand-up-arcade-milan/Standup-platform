@@ -1,5 +1,30 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
-import { AuthProvider } from '../components/AuthProvider'
+import { AuthProvider, useAuth } from '../components/AuthProvider'
+
+/** Navigation component with role-based links */
+function Navigation() {
+  const { role } = useAuth()
+  const isAdmin = role === 'DIREZIONE' || role === 'AMMINISTRATORE'
+
+  return (
+    <nav aria-label="Navigazione principale">
+      <Link to="/commerciale" activeProps={{ className: 'active' }}>
+        Commerciale
+      </Link>
+      <Link to="/espositore" activeProps={{ className: 'active' }}>
+        Area espositore
+      </Link>
+      <Link to="/scansione" activeProps={{ className: 'active' }}>
+        Scansione stand
+      </Link>
+      {isAdmin && (
+        <Link to="/pannello-controllo" activeProps={{ className: 'active' }}>
+          Pannello di Controllo
+        </Link>
+      )}
+    </nav>
+  )
+}
 
 /** Shared page frame; future screens can be nested under this layout. */
 export const Route = createRootRoute({
@@ -17,17 +42,7 @@ function RootLayout() {
             <p className="eyebrow">ARCADE MILANO &middot; PIATTAFORMA</p>
             <h1><span className="brand-mark">S</span>Stand up</h1>
           </div>
-          <nav aria-label="Navigazione principale">
-            <Link to="/commerciale" activeProps={{ className: 'active' }}>
-              Commerciale
-            </Link>
-            <Link to="/espositore" activeProps={{ className: 'active' }}>
-              Area espositore
-            </Link>
-            <Link to="/scansione" activeProps={{ className: 'active' }}>
-              Scansione stand
-            </Link>
-          </nav>
+          <Navigation />
         </header>
         <main id="main-content">
           <Outlet />

@@ -34,6 +34,28 @@ export function hasAuthToken(): boolean {
   return getAuthToken() !== null;
 }
 
+/**
+ * Legge il claim `role` dal payload del JWT. Non verifica la firma: quella è
+ * responsabilità del server, qui serve solo a decidere cosa mostrare nel frontend.
+ */
+function decodeRole(token: string): string | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const claims = JSON.parse(atob(padded)) as { role?: unknown };
+    return typeof claims.role === 'string' ? claims.role : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAuthRole(): string | null {
+  const token = getAuthToken();
+  return token ? decodeRole(token) : null;
+}
+
 export async function login(credentials: LoginCredentials): Promise<{ accessToken: string }> {
   const result = await api<{ accessToken: string }>('/auth/login', {
     method: 'POST',
