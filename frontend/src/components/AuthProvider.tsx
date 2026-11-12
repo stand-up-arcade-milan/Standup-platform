@@ -6,17 +6,16 @@ import {
   resetPassword,
   saveAuthToken,
   clearAuthToken,
-  hasAuthToken,
-  getAuthRole,
+  getSession,
   type AuthMode,
   type LoginCredentials,
   type OAuthCredentials,
+  type Session,
 } from '../services/auth';
 
 type AuthContextType = {
+  session: Session | null;
   isAuthenticated: boolean;
-  /** Ruolo dell'utente, letto dal claim `role` del JWT (es. DIREZIONE, ESPOSITORE). */
-  role: string | null;
   isLoading: boolean;
   error: string | null;
   successMessage: string | null;
@@ -34,17 +33,32 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasAuthToken());
-  const [role, setRole] = useState<string | null>(getAuthRole());
+  const [session, setSession] = useState<Session | null>(() => getSession());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
 
   useEffect(() => {
-    setIsAuthenticated(hasAuthToken());
-    setRole(getAuthRole());
+    setSession(getSession());
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const remaining = session.expiresAt - Date.now();
+    if (remaining <= 0) {
+      clearAuthToken();
+      setSession(null);
+      setSuccessMessage('Sessione scaduta: accedi di nuovo per continuare.');
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      clearAuthToken();
+      setSession(null);
+      setSuccessMessage('Sessione scaduta: accedi di nuovo per continuare.');
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [session]);
 
   const clearError = useCallback(() => setError(null), []);
   const clearSuccess = useCallback(() => setSuccessMessage(null), []);
@@ -56,11 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await login(credentials);
       saveAuthToken(result.accessToken);
-      setIsAuthenticated(true);
-      setRole(getAuthRole());
+      setSession(getSession());
+      setAuthMode('login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Accesso non riuscito.');
-      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await loginWithOAuth(credentials);
       saveAuthToken(result.accessToken);
-      setIsAuthenticated(true);
-      setRole(getAuthRole());
+      setSession(getSession());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Accesso OAuth non riuscito.');
-      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -114,15 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleLogout = useCallback(() => {
     clearAuthToken();
-    setIsAuthenticated(false);
-    setRole(null);
+    setSession(null);
     setError(null);
     setSuccessMessage(null);
+    setAuthMode('login');
   }, []);
 
   const value: AuthContextType = {
-    isAuthenticated,
-    role,
+    session,
+    isAuthenticated: session !== null,
     isLoading,
     error,
     successMessage,
