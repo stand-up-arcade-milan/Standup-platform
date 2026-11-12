@@ -209,6 +209,7 @@ public class PlatformApiController {
         }
         if (path.startsWith("/kpi/")) {
             if(path.matches("/kpi/stand/[^/]+")||path.matches("/kpi/espositori/[^/]+")) tokens.authenticate(request,"DIREZIONE","COMMERCIALE","ESPOSITORE","AMMINISTRATORE");
+            else if(path.equals("/kpi/affluenza")) tokens.authenticate(request,"DIREZIONE","COMMERCIALE","STAFF","AMMINISTRATORE");
             else tokens.authenticate(request,"DIREZIONE","COMMERCIALE","AMMINISTRATORE");
             return;
         }

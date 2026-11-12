@@ -143,6 +143,27 @@ class PlatformApiControllerTest {
         assertTrue(kpiWrites.get(0).contains("?::text[]"));
     }
 
+    @Test
+    void staffReadsAffluenzaKpiButDirectionKpiStaysReserved() {
+        when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
+        MockHttpServletRequest affluenza = request("GET", "/api/v1/kpi/affluenza");
+        affluenza.addParameter("edizione", "2025");
+        affluenza.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ResponseEntity<?> response = controller.dispatch(affluenza, null);
+
+        assertEquals(200, response.getStatusCode().value());
+
+        MockHttpServletRequest direzione = request("GET", "/api/v1/kpi/direzione");
+        direzione.addParameter("edizione", "2025");
+        direzione.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ApiFailure failure = assertThrows(ApiFailure.class, () -> controller.dispatch(direzione, null));
+
+        assertEquals(403, failure.status());
+        assertEquals("RUOLO_NON_AUTORIZZATO", failure.code());
+    }
+
     private MockHttpServletRequest request(String method, String uri) {
         return new MockHttpServletRequest(method, uri);
     }
