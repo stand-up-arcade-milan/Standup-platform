@@ -31,6 +31,12 @@ export async function fetchKpi(edizione: number, dal?: string, al?: string): Pro
   }
 }
 
+/** Tutte le osservazioni del lotto più recente (GET /kpi/direzione), senza rimappature. */
+export async function fetchKpiItems(edizione: number): Promise<KpiObservation[]> {
+  const data = await api<KpiResponse>(`/kpi/direzione${query({ edizione })}`, {}, 'exhibitor')
+  return data.items ?? []
+}
+
 /** Etichette leggibili per i codici di affluenza restituiti da BID. */
 const etichetteAffluenza: Record<string, string> = {
   ingressi_effettivi: 'Ingressi effettivi',
