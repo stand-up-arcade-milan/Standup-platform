@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../components/AuthProvider';
 import { LoginForm, RecoveryForm, ResetForm } from '../components/LoginForm';
+import { homeFor } from '../services/auth';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID ?? '';
 const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_OAUTH_CLIENT_ID ?? '';
@@ -76,13 +77,13 @@ function GoogleLoginButton({ onSuccess, onError }: { onSuccess: (token: string) 
 }
 
 function AuthPage() {
-  const { isAuthenticated, authMode, loginWithOAuth } = useAuth();
+  const { session, isAuthenticated, authMode, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) void navigate({ to: '/espositore' });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) void navigate({ to: homeFor(session?.role ?? 'ESPOSITORE') });
+  }, [isAuthenticated, session, navigate]);
 
   const handleOAuthSuccess = useCallback(async (token: string, provider: 'google' | 'microsoft') => {
     setOauthError(null);

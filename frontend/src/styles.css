@@ -335,3 +335,11 @@ td small { display: block; margin-top: .23rem; color: #938a99; font-size: .68rem
   .access-strip { padding: .7rem; }
   .camera-window { min-height: 260px; }
 }
+
+/* Accesso: chip di sessione nella barra di navigazione e messaggi di autorizzazione. */
+.session-chip { display: inline-flex; align-items: center; gap: .55rem; padding: .35rem .35rem .35rem .75rem; border: 1px solid #544a58; border-radius: .55rem; }
+.session-chip .session-role { color: var(--lime); font-size: .74rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+.session-chip .text-button { padding: .25rem .55rem; }
+.auth-guard { max-width: 34rem; margin: 2.5rem auto; display: grid; gap: .35rem; }
+.auth-guard .button { justify-self: start; margin-top: .6rem; }
+.auth-guard .muted { color: var(--muted); font-size: .82rem; }
