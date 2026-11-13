@@ -70,8 +70,8 @@ function OperationsPage() {
     setLoading(true)
     setMessages({})
     const results = await Promise.allSettled([
-      api<{ items: KpiItem[] }>(`/kpi/affluenza?edizione=${edition}`),
-      api<{ items: Notice[] }>('/avvisi?pubblico=STAFF'),
+      api<{ items: KpiItem[] }>(`/kpi/affluenza?edizione=${edition}`, {}, 'exhibitor'),
+      api<{ items: Notice[] }>('/avvisi?pubblico=STAFF', {}, 'exhibitor'),
     ] as const)
     const [affluenza, avvisi] = results
     setKpis(affluenza.status === 'fulfilled' ? affluenza.value.items ?? [] : [])
