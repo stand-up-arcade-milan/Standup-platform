@@ -65,12 +65,12 @@ VALUES ('00000000-0000-0000-0000-00000000c101', 'Sara Test', 'sara@example.inval
        ('00000000-0000-0000-0000-00000000c102', 'Marco Test', 'marco@example.invalid')
 ON CONFLICT (id_membro) DO UPDATE SET nome=EXCLUDED.nome, email=EXCLUDED.email;
 INSERT INTO turno (id_turno, anno, padiglione, mansione, inizio, fine, persone_previste, note)
-VALUES ('00000000-0000-0000-0000-00000000t001', 2026, 'P1', 'CONTROLLO_ACCESSI', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 1, 'Turno coperto del fixture CI'),
-       ('00000000-0000-0000-0000-00000000t002', 2026, 'P1', 'INFO_POINT', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 2, 'Turno scoperto del fixture CI')
+VALUES ('00000000-0000-0000-0000-00000000d001', 2026, 'P1', 'CONTROLLO_ACCESSI', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 1, 'Turno coperto del fixture CI'),
+       ('00000000-0000-0000-0000-00000000d002', 2026, 'P1', 'INFO_POINT', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 2, 'Turno scoperto del fixture CI')
 ON CONFLICT (id_turno, inizio, fine) DO UPDATE SET anno=EXCLUDED.anno, padiglione=EXCLUDED.padiglione,
     mansione=EXCLUDED.mansione, persone_previste=EXCLUDED.persone_previste, note=EXCLUDED.note;
 INSERT INTO assegnazione_turno (id_turno, id_membro, inizio, fine, confermata)
-VALUES ('00000000-0000-0000-0000-00000000t001', '00000000-0000-0000-0000-00000000c101', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', true)
+VALUES ('00000000-0000-0000-0000-00000000d001', '00000000-0000-0000-0000-00000000c101', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', true)
 ON CONFLICT (id_turno, id_membro) DO UPDATE SET confermata=true;
 
 COMMIT;
