@@ -430,7 +430,7 @@ paths:
   /auth/login:
     post:
       tags: [Autenticazione]
-      summary: Autentica un account espositore
+      summary: Autentica con email e password un account espositore, direzione o interno (staff, commerciale, amministrazione)
       operationId: loginEspositore
       requestBody:
         required: true

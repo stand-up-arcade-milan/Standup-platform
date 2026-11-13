@@ -481,6 +481,14 @@ public class PlatformApiController {
             );
         }
         
+        // 3. Se non trovato, cerca tra gli account interni (staff, commerciale, amministratore)
+        if (account == null) {
+            account = oneOrNull(
+                "SELECT id_account AS id, password_hash, attivo, ruolo FROM arcade.account_interno WHERE lower(email)=lower(?)", 
+                email
+            );
+        }
+        
         // 3. Verifica esistenza, stato attivo e password
         if (account == null || !Boolean.TRUE.equals(account.get("attivo")) || !verifyPassword(text(b, "password"), String.valueOf(account.get("password_hash")))) {
             loginRateLimiter.failed(rateKey);
@@ -494,8 +502,10 @@ public class PlatformApiController {
         // 4. Aggiorna ultimo accesso nella tabella corretta
         if ("DIREZIONE".equals(ruolo)) {
             db.update("UPDATE arcade.account_direzione SET ultimo_accesso=now() WHERE lower(email)=lower(?)", email);
-        } else {
+        } else if ("ESPOSITORE".equals(ruolo)) {
             db.update("UPDATE arcade.account_espositore SET ultimo_accesso=now() WHERE lower(email)=lower(?)", email);
+        } else {
+            db.update("UPDATE arcade.account_interno SET ultimo_accesso=now() WHERE lower(email)=lower(?)", email);
         }
         
         // 5. Emetti il token con il ruolo corretto

@@ -55,6 +55,11 @@ INSERT INTO visita_stand_ora (id_riferimento, id_evento, anno, codice_stand, ora
 VALUES ('CI-LEGACY-01', 'CI-LEGACY-EVENT-01', 2026, 'CI-STAND-01', date_trunc('hour', now()), 99, '{}')
 ON CONFLICT (id_riferimento) DO UPDATE SET ora_inizio=EXCLUDED.ora_inizio, scansioni=EXCLUDED.scansioni;
 
+-- Account interno per l'accesso email e password dal portale.
+INSERT INTO account_interno (email, password_hash, ruolo, attivo)
+VALUES ('staff-ci@example.invalid', 'pbkdf2$210000$g7+5AznmZZRQd+33HOHqpQ==$i/npurgOzrJkjsQ5t3Gt/yFkWk1fXjCe1KS9RBGGBco=', 'STAFF', true)
+ON CONFLICT (email) DO UPDATE SET password_hash=EXCLUDED.password_hash, ruolo=EXCLUDED.ruolo, attivo=true;
+
 -- Turni del personale per la schermata Operativita: uno coperto e uno scoperto.
 INSERT INTO membro_staff (id_membro, codice, ruolo, attivo)
 VALUES ('00000000-0000-0000-0000-00000000c101', 'CI-STAFF-01', 'CONTROLLO_ACCESSI', true),
