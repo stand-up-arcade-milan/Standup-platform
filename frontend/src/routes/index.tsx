@@ -108,6 +108,7 @@ function HomePage() {
 
   return (
     <section className="home-page">
+      <img className="home-hero__banner" src="/arcade-banner.svg" alt="Banner ufficiale di ARCADE Milano" />
       <div className="home-hero">
         <p className="eyebrow">STAND UP PRESENTA</p>
         <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
@@ -129,18 +130,17 @@ function HomePage() {
           <button type="button" className="button button--lime home-cta-xl" onClick={() => scorriA('informazioni')}>
             VISITA
           </button>
-          <button type="button" className="button button--ink-outline home-cta-xl" onClick={() => scorriA('faq')}>
+          <button type="button" className="button button--outline home-cta-xl" onClick={() => scorriA('faq')}>
             ESPONI
           </button>
           {session ? (
-            <button type="button" className="button button--ink" onClick={() => void navigate({ to: homeFor(session.role) })}>
+            <button type="button" className="button button--dark" onClick={() => void navigate({ to: homeFor(session.role) })}>
               Vai alla tua area
             </button>
           ) : (
-            <Link className="button button--ink" to="/accesso">Accedi al portale</Link>
+            <Link className="button button--dark" to="/accesso">Accedi al portale</Link>
           )}
         </div>
-        <img className="home-hero__banner" src="/arcade-banner.svg" alt="Banner ufficiale di ARCADE Milano" />
       </div>
 
       {errore && <p className="alert alert--error" role="alert">{errore}</p>}
