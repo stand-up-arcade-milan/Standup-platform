@@ -588,20 +588,6 @@ Account di accesso della direzione di ARCADE. Titolare: Sicurezza. Livello della
 | `ultimo_accesso` | `timestamp with time zone` | Orario dell'ultimo accesso | INTERNO |
 | `email_verificata` | `boolean` | Vero se email verificata | INTERNO |
 
-### account_interno
-
-Account di accesso di staff, commerciale e amministrazione. Titolare: Sicurezza. Livello della tabella: PERSONALE.
-
-| Colonna | Tipo | Descrizione | Livello |
-|---|---|---|---|
-| `id_account` | `uuid` | Identificativo dell'account interno | RISERVATO |
-| `email` | `text` | Email di accesso dell'account interno | PERSONALE |
-| `password_hash` | `text` | Impronta della password, mai la password | RISERVATO |
-| `ruolo` | `text` | Ruolo operativo: staff, commerciale o amministratore | INTERNO |
-| `attivo` | `boolean` | Se l'account è attivo | INTERNO |
-| `creato_il` | `timestamp with time zone` | Creazione dell'account | INTERNO |
-| `ultimo_accesso` | `timestamp with time zone` | Ultimo accesso riuscito | INTERNO |
-
 ### account_espositore
 
 Account di accesso degli espositori. Titolare: Sicurezza. Livello della tabella: PERSONALE.
@@ -616,6 +602,20 @@ Account di accesso degli espositori. Titolare: Sicurezza. Livello della tabella:
 | `creato_il` | `timestamp with time zone` | Orario di attivazione | INTERNO |
 | `ultimo_accesso` | `timestamp with time zone` | Orario dell'ultimo accesso | INTERNO |
 | `email_verificata` | `boolean` | Vero se email verificata | INTERNO |
+
+### account_interno
+
+Account di accesso di staff, commerciale e amministrazione. Titolare: Sicurezza. Livello della tabella: PERSONALE.
+
+| Colonna | Tipo | Descrizione | Livello |
+|---|---|---|---|
+| `id_account` | `uuid` | Identificativo dell'account interno | RISERVATO |
+| `email` | `text` | Email di accesso dell'account interno | PERSONALE |
+| `password_hash` | `text` | Impronta della password, mai la password | RISERVATO |
+| `ruolo` | `text` | Ruolo operativo: staff, commerciale o amministratore | INTERNO |
+| `attivo` | `boolean` | Se l'account è attivo | INTERNO |
+| `creato_il` | `timestamp with time zone` | Creazione dell'account | INTERNO |
+| `ultimo_accesso` | `timestamp with time zone` | Ultimo accesso riuscito | INTERNO |
 
 ### invito_espositore
 
