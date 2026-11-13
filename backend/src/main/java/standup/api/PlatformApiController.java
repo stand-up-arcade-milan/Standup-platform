@@ -956,11 +956,11 @@ public class PlatformApiController {
         Integer anno=null;
         if(raw!=null&&!raw.isBlank()) { try{anno=Integer.valueOf(raw.trim());}catch(NumberFormatException e){throw new ApiFailure(400,"EDIZIONE_NON_VALIDA","L'edizione richiesta non è valida.");} }
         return items(db.queryForList("""
-                SELECT id_turno,anno AS edizione,luogo,tipo_luogo,mansione,inizio,fine,
-                       persone_previste,persone_assegnate,persone_mancanti,note
-                FROM arcade.v_turno_copertura
-                WHERE (?::int IS NULL OR anno=?)
-                ORDER BY inizio,luogo
+                SELECT v.id_turno,v.anno AS edizione,v.luogo,v.tipo_luogo,v.mansione,v.inizio,v.fine,
+                       v.persone_previste,v.persone_assegnate,v.persone_mancanti,t.note
+                FROM arcade.v_turno_copertura v JOIN arcade.turno t USING (id_turno)
+                WHERE (?::int IS NULL OR v.anno=?)
+                ORDER BY v.inizio,v.luogo
                 """,anno,anno));
     }
     private Object createAvviso(Map<String,Object>b) { require(b,"titolo","testo","pubblico"); UUID id=db.queryForObject("INSERT INTO arcade.avviso(titolo,testo,pubblico,pubblicato_il,attivo) VALUES(?,?,?,coalesce(?::timestamptz,now()),coalesce(?::boolean,true)) RETURNING id_avviso",UUID.class,text(b,"titolo"),text(b,"testo"),text(b,"pubblico"),textOrNull(b,"pubblicatoIl"),b.get("attivo")); return one("SELECT id_avviso AS id,titolo,testo,pubblico,pubblicato_il,attivo FROM arcade.avviso WHERE id_avviso=?",id); }
