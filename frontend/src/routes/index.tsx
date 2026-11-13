@@ -111,20 +111,25 @@ function HomePage() {
       <div className="home-hero">
         <p className="eyebrow">STAND UP PRESENTA</p>
         <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
-          <p className="home-hero__where">
-            Gaming e cultura pop, tutto in un posto
-            {dateFiera ? ` \u00b7 ${dateFiera}` : ''}
-            {attiva?.sede ? ` \u00b7 ${attiva.sede}` : ''}
-          </p>
-          <p className="home-hero__lead">
-            Tre giorni aperti al pubblico: tornei, anteprime, cosplay e creator. Le informazioni
-            ufficiali dell'organizzazione arrivano da questo portale.
-          </p>
+        <p className="home-hero__where">
+          Gaming e cultura pop, tutto in un posto
+          {dateFiera ? ` \u00b7 ${dateFiera}` : ''}
+          {attiva?.sede ? ` \u00b7 ${attiva.sede}` : ''}
+        </p>
+        <p className="home-hero__lead">
+          Tre giorni aperti al pubblico: tornei, anteprime, cosplay e creator. Le informazioni
+          ufficiali dell'organizzazione arrivano da questo portale.
+        </p>
+        <div className="hero-meta">
+          {dateFiera && <span>{dateFiera}</span>}
+          {attiva?.sede && <span>{attiva.sede}</span>}
+          {statoLabel && <span>Edizione {statoLabel}</span>}
+        </div>
         <div className="home-hero__ctas">
-          <button type="button" className="button button--brick home-cta-xl" onClick={() => scorriA('informazioni')}>
+          <button type="button" className="button button--lime home-cta-xl" onClick={() => scorriA('informazioni')}>
             VISITA
           </button>
-          <button type="button" className="button button--brick-outline home-cta-xl" onClick={() => scorriA('faq')}>
+          <button type="button" className="button button--ink-outline home-cta-xl" onClick={() => scorriA('faq')}>
             ESPONI
           </button>
           {session ? (
@@ -162,8 +167,10 @@ function HomePage() {
       </div>
 
       <section className="home-section" id="informazioni">
-        <p className="eyebrow">INFO UTILI</p>
-        <h3>ARCADE in breve</h3>
+        <div className="section-head">
+          <p className="eyebrow">INFO UTILI</p>
+          <h3>ARCADE in breve</h3>
+        </div>
         <div className="home-brief">
           <div className="brief-item">
             <span>DOVE</span>
@@ -184,9 +191,9 @@ function HomePage() {
       </section>
 
       <section className="home-section">
-        <div className="panel-heading">
-          <div><p className="eyebrow">NOVITÀ E AVVISI</p><h3>Comunicazioni per i visitatori</h3></div>
-          <span className="count-pill">{avvisi.length}</span>
+        <div className="section-head">
+          <p className="eyebrow">NOVITÀ E AVVISI</p>
+          <h3>Comunicazioni per i visitatori <span className="count-pill">{avvisi.length}</span></h3>
         </div>
         {avvisi.length === 0
           ? <p className="quiet-state">Nessun avviso pubblico al momento.</p>
@@ -201,8 +208,10 @@ function HomePage() {
       </section>
 
       <section className="home-section">
-        <p className="eyebrow">PERCHÉ VISITARE</p>
-        <h3>Perché venire ad ARCADE</h3>
+        <div className="section-head">
+          <p className="eyebrow">PERCHÉ VISITARE</p>
+          <h3>Perché venire ad ARCADE</h3>
+        </div>
         <div className="why-grid">
           {PERCHE.map((item) => (
             <article className="why-card" key={item.titolo}>
@@ -214,8 +223,10 @@ function HomePage() {
       </section>
 
       <section className="home-section" id="faq">
-        <p className="eyebrow">FAQ</p>
-        <h3>Domande frequenti</h3>
+        <div className="section-head">
+          <p className="eyebrow">FAQ</p>
+          <h3>Domande frequenti</h3>
+        </div>
         <div className="faq-list">
           {faq.map((item) => (
             <details key={item.domanda}>
