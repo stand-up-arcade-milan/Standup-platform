@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -141,6 +142,70 @@ class PlatformApiControllerTest {
         assertEquals(1, kpiWrites.size());
         assertTrue(kpiWrites.get(0).contains("flag_qualita"));
         assertTrue(kpiWrites.get(0).contains("?::text[]"));
+    }
+
+    @Test
+    void internalAccountLogsInWithEmailAndPasswordAndGetsItsRole() {
+        Map<String, Object> account = new LinkedHashMap<>();
+        account.put("id", "00000000-0000-0000-0000-00000000d001");
+        account.put("password_hash", "pbkdf2$210000$g7+5AznmZZRQd+33HOHqpQ==$i/npurgOzrJkjsQ5t3Gt/yFkWk1fXjCe1KS9RBGGBco=");
+        account.put("attivo", true);
+        account.put("ruolo", "STAFF");
+        when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of(), List.of(), List.of(account));
+
+        MockHttpServletRequest request = request("POST", "/api/v1/auth/login");
+
+        ResponseEntity<?> response = controller.dispatch(request,
+                Map.of("email", "staff-ci@example.invalid", "password", "CI-Staff-2026-Password!"));
+
+        assertEquals(200, response.getStatusCode().value());
+        Map<?, ?> body = assertInstanceOf(Map.class, response.getBody());
+        String token = assertInstanceOf(String.class, body.get("accessToken"));
+        String payload = new String(java.util.Base64.getUrlDecoder().decode(token.split("\\.")[1]));
+        assertTrue(payload.contains("\"role\":\"STAFF\""), "il token non porta il ruolo dell'account interno");
+        verify(db).update(contains("account_interno"), eq("staff-ci@example.invalid"));
+    }
+
+    @Test
+    void staffReadsTurniWhileExhibitorIsRejected() {
+        when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
+        MockHttpServletRequest staff = request("GET", "/api/v1/turni");
+        staff.addParameter("anno", "2026");
+        staff.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ResponseEntity<?> response = controller.dispatch(staff, null);
+
+        assertEquals(200, response.getStatusCode().value());
+
+        MockHttpServletRequest exhibitor = request("GET", "/api/v1/turni");
+        exhibitor.addParameter("anno", "2026");
+        exhibitor.addHeader("Authorization", "Bearer " + tokens.issue("exhibitor-user", "ESPOSITORE", "CI-EXHIBITOR-01", 60));
+
+        ApiFailure failure = assertThrows(ApiFailure.class, () -> controller.dispatch(exhibitor, null));
+
+        assertEquals(403, failure.status());
+        assertEquals("RUOLO_NON_AUTORIZZATO", failure.code());
+    }
+
+    @Test
+    void staffReadsAffluenzaKpiButDirectionKpiStaysReserved() {
+        when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
+        MockHttpServletRequest affluenza = request("GET", "/api/v1/kpi/affluenza");
+        affluenza.addParameter("edizione", "2025");
+        affluenza.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ResponseEntity<?> response = controller.dispatch(affluenza, null);
+
+        assertEquals(200, response.getStatusCode().value());
+
+        MockHttpServletRequest direzione = request("GET", "/api/v1/kpi/direzione");
+        direzione.addParameter("edizione", "2025");
+        direzione.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ApiFailure failure = assertThrows(ApiFailure.class, () -> controller.dispatch(direzione, null));
+
+        assertEquals(403, failure.status());
+        assertEquals("RUOLO_NON_AUTORIZZATO", failure.code());
     }
 
     private MockHttpServletRequest request(String method, String uri) {

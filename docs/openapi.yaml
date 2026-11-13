@@ -430,7 +430,7 @@ paths:
   /auth/login:
     post:
       tags: [Autenticazione]
-      summary: Autentica un account espositore
+      summary: Autentica con email e password un account espositore, direzione o interno (staff, commerciale, amministrazione)
       operationId: loginEspositore
       requestBody:
         required: true
@@ -1285,6 +1285,34 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /turni:
+    get:
+      tags: [Operativita]
+      summary: Elenca i turni del personale con la copertura per varco o padiglione
+      operationId: listTurni
+      security:
+        - internalBearer: []
+      parameters:
+        - name: anno
+          in: query
+          schema: { type: integer, minimum: 2024 }
+      responses:
+        '200':
+          description: Turni ordinati per inizio, con persone previste, assegnate e mancanti
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Turno' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/ServerError' }
 
   /admin/audit:
@@ -2169,6 +2197,21 @@ components:
         pubblico: { type: string, enum: [VISITATORI, ESPOSITORI, STAFF] }
         pubblicatoIl: { type: string, format: date-time }
         attivo: { type: boolean }
+    Turno:
+      type: object
+      required: [idTurno, edizione, luogo, tipoLuogo, mansione, inizio, fine, personePreviste, personeAssegnate, personeMancanti]
+      properties:
+        idTurno: { type: string, format: uuid }
+        edizione: { type: integer, minimum: 2024 }
+        luogo: { type: string }
+        tipoLuogo: { type: string, enum: [VARCO, PADIGLIONE] }
+        mansione: { type: string, enum: [ACCOGLIENZA, CONTROLLO_ACCESSI, INFO_POINT, SICUREZZA, TECNICO] }
+        inizio: { type: string, format: date-time }
+        fine: { type: string, format: date-time }
+        personePreviste: { type: integer, minimum: 1 }
+        personeAssegnate: { type: integer, minimum: 0 }
+        personeMancanti: { type: integer, minimum: 0 }
+        note: { type: string, nullable: true }
     ParametriEdizione:
       type: object
       properties:
