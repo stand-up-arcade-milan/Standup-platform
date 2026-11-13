@@ -109,9 +109,8 @@ function HomePage() {
   return (
     <section className="home-page">
       <div className="home-hero">
-        <div className="home-hero__content">
-          <p className="eyebrow">STAND UP PRESENTA</p>
-          <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
+        <p className="eyebrow">STAND UP PRESENTA</p>
+        <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
           <p className="home-hero__where">
             Gaming e cultura pop, tutto in un posto
             {dateFiera ? ` \u00b7 ${dateFiera}` : ''}
@@ -121,22 +120,22 @@ function HomePage() {
             Tre giorni aperti al pubblico: tornei, anteprime, cosplay e creator. Le informazioni
             ufficiali dell'organizzazione arrivano da questo portale.
           </p>
-          <div className="home-hero__ctas">
-            <button type="button" className="button button--lime home-cta-xl" onClick={() => scorriA('informazioni')}>
-              VISITA
+        <div className="home-hero__ctas">
+          <button type="button" className="button button--brick home-cta-xl" onClick={() => scorriA('informazioni')}>
+            VISITA
+          </button>
+          <button type="button" className="button button--brick-outline home-cta-xl" onClick={() => scorriA('faq')}>
+            ESPONI
+          </button>
+          {session ? (
+            <button type="button" className="button button--ink" onClick={() => void navigate({ to: homeFor(session.role) })}>
+              Vai alla tua area
             </button>
-            <button type="button" className="button button--outline home-cta-xl" onClick={() => scorriA('faq')}>
-              ESPONI
-            </button>
-            {session ? (
-              <button type="button" className="button button--dark" onClick={() => void navigate({ to: homeFor(session.role) })}>
-                Vai alla tua area
-              </button>
-            ) : (
-              <Link className="button button--dark" to="/accesso">Accedi al portale</Link>
-            )}
-          </div>
+          ) : (
+            <Link className="button button--ink" to="/accesso">Accedi al portale</Link>
+          )}
         </div>
+        <img className="home-hero__banner" src="/arcade-banner.svg" alt="Banner ufficiale di ARCADE Milano" />
       </div>
 
       {errore && <p className="alert alert--error" role="alert">{errore}</p>}
