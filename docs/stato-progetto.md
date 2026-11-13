@@ -8,6 +8,7 @@ Aggiornato il 08/11/2026. Punto di partenza per BID, BAD e per chi continua il l
 - BAD calcola i KPI e li invia a BID. BID conserva e serve i KPI tramite API; i client non ricalcolano le formule.
 - Stack deciso: Java 21 e Spring Boot; PostgreSQL; React e TypeScript con Bun, Vite e TanStack Router; Docker Compose per l'avvio locale.
 - Le schermate 4, 5 e 6 sono implementate in React: `/commerciale`, `/espositore`, `/scansione`. La schermata 1 (`/accesso`) entra come ingresso unico con sessione e ruoli; la schermata 2 e la 3 sono in lavorazione su branch dedicati; le schermate 7, 8 e 9 hanno specifiche funzionali senza implementazione.
+- La home pubblica (`/`) è la landing del portale: edizione attiva con date e sede, sezione «perché visitare», blocco «in breve» (dove/quando/biglietti), FAQ e avvisi ai visitatori, senza numeri inventati.
 - `docs/openapi.yaml` è il contratto condiviso: descrive 54 percorsi e 58 operazioni. La suite di integrazione invoca tutte le operationId e fallisce se il contratto aggiunge un’operazione senza test; restano da concordare congiuntamente i KPI nell’[issue #10](https://github.com/stand-up-arcade-milan/Standup-platform/issues/10).
 
 ## Lavoro completato

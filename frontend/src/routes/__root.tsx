@@ -77,7 +77,7 @@ function Shell() {
       <footer className="site-footer">
         <span>ARCADE MILANO 2026</span>
         <span>Un'unica piattaforma, dati condivisi.</span>
-        <Link to="/" className="footer-link">Stato servizi</Link>
+        <Link to="/" className="footer-link">Home</Link>
       </footer>
     </div>
   )
