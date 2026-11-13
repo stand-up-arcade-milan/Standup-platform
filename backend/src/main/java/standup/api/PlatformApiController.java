@@ -213,6 +213,7 @@ public class PlatformApiController {
             else tokens.authenticate(request,"DIREZIONE","COMMERCIALE","AMMINISTRATORE");
             return;
         }
+        if (path.equals("/turni")) { tokens.authenticate(request, "STAFF", "DIREZIONE", "AMMINISTRATORE"); return; }
         if (path.equals("/avvisi") || path.startsWith("/avvisi/")) { tokens.authenticate(request, "STAFF", "AMMINISTRATORE"); return; }
         if (path.startsWith("/admin/")) { tokens.authenticate(request, "AMMINISTRATORE"); return; }
         if (path.startsWith("/bi/dati/")) { tokens.authenticate(request, "BAD"); return; }
@@ -264,6 +265,7 @@ public class PlatformApiController {
         if (p.equals("/lead-magnet") && m.equals("POST")) return createLeadMagnet(b);
         if (p.startsWith("/kpi/")) return kpi(p, r);
         if (p.equals("/avvisi") && m.equals("GET")) return avvisi(r);
+        if (p.equals("/turni") && m.equals("GET")) return turni(r);
         if (p.equals("/avvisi") && m.equals("POST")) return createAvviso(b);
         if (p.matches("/avvisi/[^/]+") && m.equals("PATCH")) return updateAvviso(p, b);
         if (p.matches("/admin/edizioni/\\d+") && m.equals("PUT")) return putEdizione(p, b);
@@ -948,6 +950,20 @@ public class PlatformApiController {
     }
 
     private Object avvisi(HttpServletRequest r) { return items(db.queryForList("SELECT id_avviso AS id,titolo,testo,pubblico,pubblicato_il,attivo FROM arcade.avviso WHERE attivo AND (?::text IS NULL OR pubblico=?) ORDER BY pubblicato_il DESC",r.getParameter("pubblico"),r.getParameter("pubblico"))); }
+
+    private Object turni(HttpServletRequest r) {
+        String raw=r.getParameter("anno");
+        Integer anno=null;
+        if(raw!=null&&!raw.isBlank()) { try{anno=Integer.valueOf(raw.trim());}catch(NumberFormatException e){throw new ApiFailure(400,"EDIZIONE_NON_VALIDA","L'edizione richiesta non è valida.");} }
+        return items(db.queryForList("""
+                SELECT id_turno,anno AS edizione,coalesce(varco,padiglione) AS luogo,
+                       CASE WHEN varco IS NOT NULL THEN 'VARCO' ELSE 'PADIGLIONE' END AS tipo_luogo,
+                       mansione,inizio,fine,persone_previste,persone_assegnate,persone_mancanti,note
+                FROM arcade.v_turno_copertura
+                WHERE (?::int IS NULL OR anno=?)
+                ORDER BY inizio,luogo
+                """,anno,anno));
+    }
     private Object createAvviso(Map<String,Object>b) { require(b,"titolo","testo","pubblico"); UUID id=db.queryForObject("INSERT INTO arcade.avviso(titolo,testo,pubblico,pubblicato_il,attivo) VALUES(?,?,?,coalesce(?::timestamptz,now()),coalesce(?::boolean,true)) RETURNING id_avviso",UUID.class,text(b,"titolo"),text(b,"testo"),text(b,"pubblico"),textOrNull(b,"pubblicatoIl"),b.get("attivo")); return one("SELECT id_avviso AS id,titolo,testo,pubblico,pubblicato_il,attivo FROM arcade.avviso WHERE id_avviso=?",id); }
     private Object updateAvviso(String p,Map<String,Object>b) { UUID id=uuid(p.substring("/avvisi/".length())); int n=db.update("UPDATE arcade.avviso SET titolo=coalesce(?,titolo),testo=coalesce(?,testo),pubblico=coalesce(?,pubblico),pubblicato_il=coalesce(?::timestamptz,pubblicato_il),attivo=coalesce(?::boolean,attivo) WHERE id_avviso=?",b.get("titolo"),b.get("testo"),b.get("pubblico"),b.get("pubblicatoIl"),b.get("attivo"),id); if(n==0) throw notFound("Avviso"); return one("SELECT id_avviso AS id,titolo,testo,pubblico,pubblicato_il,attivo FROM arcade.avviso WHERE id_avviso=?",id); }
 

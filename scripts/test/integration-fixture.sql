@@ -55,4 +55,22 @@ INSERT INTO visita_stand_ora (id_riferimento, id_evento, anno, codice_stand, ora
 VALUES ('CI-LEGACY-01', 'CI-LEGACY-EVENT-01', 2026, 'CI-STAND-01', date_trunc('hour', now()), 99, '{}')
 ON CONFLICT (id_riferimento) DO UPDATE SET ora_inizio=EXCLUDED.ora_inizio, scansioni=EXCLUDED.scansioni;
 
+-- Turni del personale per la schermata Operativita: uno coperto e uno scoperto.
+INSERT INTO membro_staff (id_membro, codice, ruolo, attivo)
+VALUES ('00000000-0000-0000-0000-00000000c101', 'CI-STAFF-01', 'CONTROLLO_ACCESSI', true),
+       ('00000000-0000-0000-0000-00000000c102', 'CI-STAFF-02', 'INFO_POINT', true)
+ON CONFLICT (codice) DO UPDATE SET ruolo=EXCLUDED.ruolo, attivo=true;
+INSERT INTO membro_staff_riservato (id_membro, nome, email)
+VALUES ('00000000-0000-0000-0000-00000000c101', 'Sara Test', 'sara@example.invalid'),
+       ('00000000-0000-0000-0000-00000000c102', 'Marco Test', 'marco@example.invalid')
+ON CONFLICT (id_membro) DO UPDATE SET nome=EXCLUDED.nome, email=EXCLUDED.email;
+INSERT INTO turno (id_turno, anno, padiglione, mansione, inizio, fine, persone_previste, note)
+VALUES ('00000000-0000-0000-0000-00000000t001', 2026, 'P1', 'CONTROLLO_ACCESSI', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 1, 'Turno coperto del fixture CI'),
+       ('00000000-0000-0000-0000-00000000t002', 2026, 'P1', 'INFO_POINT', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', 2, 'Turno scoperto del fixture CI')
+ON CONFLICT (id_turno, inizio, fine) DO UPDATE SET anno=EXCLUDED.anno, padiglione=EXCLUDED.padiglione,
+    mansione=EXCLUDED.mansione, persone_previste=EXCLUDED.persone_previste, note=EXCLUDED.note;
+INSERT INTO assegnazione_turno (id_turno, id_membro, inizio, fine, confermata)
+VALUES ('00000000-0000-0000-0000-00000000t001', '00000000-0000-0000-0000-00000000c101', '2026-12-18T08:00:00Z', '2026-12-18T12:00:00Z', true)
+ON CONFLICT (id_turno, id_membro) DO UPDATE SET confermata=true;
+
 COMMIT;

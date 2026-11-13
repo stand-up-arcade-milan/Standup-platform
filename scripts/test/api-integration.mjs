@@ -287,6 +287,11 @@ const notice = await call('createAvviso', 'POST', '/avvisi', 'STAFF', {
   titolo: `Avviso CI ${suffix}`, testo: 'Contenuto sintetico della suite integrata.', pubblico: 'STAFF',
 }, 201)
 await call('updateAvviso', 'PATCH', `/avvisi/${notice.body.id}`, 'STAFF', { attivo: false }, 200)
+const turni = await call('listTurni', 'GET', '/turni?anno=2026', 'STAFF', undefined, 200)
+expect(turni.body?.items?.some((item) => item.luogo === 'P1' && Number(item.personeAssegnate) === 1 && Number(item.personePreviste) === 1),
+  'operativita: copertura del turno coperto non coerente')
+expect(turni.body?.items?.some((item) => Number(item.personeMancanti) === 1), 'operativita: turno scoperto non segnalato')
+await call('listTurni', 'GET', '/turni?anno=2026', 'EXHIBITOR', undefined, 403)
 const auditLog = await call('listAuditEvents', 'GET', '/admin/audit?limit=100', 'AMMINISTRATORE', undefined, 200)
 expect(auditLog.body?.items?.some((event) => event.resource === '/espositori/me/contratto' && event.actorRole === 'ESPOSITORE'),
   'audit privacy: la lettura del contratto del portale non viene registrata')

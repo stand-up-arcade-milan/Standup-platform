@@ -26,6 +26,36 @@ type KpiItem = {
 
 type Notice = { id: string; titolo: string; testo: string; pubblico: string; pubblicatoIl: string; attivo: boolean }
 
+type Turno = {
+  idTurno: string
+  edizione: number
+  luogo: string
+  tipoLuogo: 'VARCO' | 'PADIGLIONE'
+  mansione: string
+  inizio: string
+  fine: string
+  personePreviste: number
+  personeAssegnate: number
+  personeMancanti: number
+  note?: string | null
+}
+
+function mansioneLabel(mansione: string): string {
+  const known: Record<string, string> = {
+    ACCOGLIENZA: 'Accoglienza',
+    CONTROLLO_ACCESSI: 'Controllo accessi',
+    INFO_POINT: 'Info point',
+    SICUREZZA: 'Sicurezza',
+    TECNICO: 'Tecnico',
+  }
+  return known[mansione] ?? mansione.replaceAll('_', ' ')
+}
+
+function fasciaOraria(turno: Turno): string {
+  const ora = (valore: string) => new Intl.DateTimeFormat('it-IT', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(valore))
+  return `${ora(turno.inizio)} – ${ora(turno.fine)}`
+}
+
 function label(codice: string): string {
   const known: Record<string, string> = {
     ingressi_effettivi: 'Ingressi effettivi',
@@ -52,6 +82,7 @@ function OperationsPage() {
   const [edition, setEdition] = useState('')
   const [kpis, setKpis] = useState<KpiItem[]>([])
   const [notices, setNotices] = useState<Notice[]>([])
+  const [turni, setTurni] = useState<Turno[]>([])
   const [messages, setMessages] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
@@ -72,13 +103,16 @@ function OperationsPage() {
     const results = await Promise.allSettled([
       api<{ items: KpiItem[] }>(`/kpi/affluenza?edizione=${edition}`, {}, 'exhibitor'),
       api<{ items: Notice[] }>('/avvisi?pubblico=STAFF', {}, 'exhibitor'),
+      api<{ items: Turno[] }>(`/turni?anno=${edition}`, {}, 'exhibitor'),
     ] as const)
-    const [affluenza, avvisi] = results
+    const [affluenza, avvisi, turniRisultato] = results
     setKpis(affluenza.status === 'fulfilled' ? affluenza.value.items ?? [] : [])
     setNotices(avvisi.status === 'fulfilled' ? avvisi.value.items ?? [] : [])
+    setTurni(turniRisultato.status === 'fulfilled' ? turniRisultato.value.items ?? [] : [])
     const failures: Record<string, string> = {}
     if (affluenza.status === 'rejected') failures.affluenza = affluenza.reason instanceof Error ? affluenza.reason.message : 'Affluenza non disponibile.'
     if (avvisi.status === 'rejected') failures.notices = avvisi.reason instanceof Error ? avvisi.reason.message : 'Avvisi non disponibili.'
+    if (turniRisultato.status === 'rejected') failures.turni = turniRisultato.reason instanceof Error ? turniRisultato.reason.message : 'Turni non disponibili.'
     setMessages(failures)
     setLoading(false)
   }, [edition])
@@ -173,8 +207,34 @@ function OperationsPage() {
                   </article>
                 ))}
             <div className="notice-section">
-              <div className="panel-heading"><div><p className="eyebrow">TURNI</p><h3>Pianificazione del personale</h3></div></div>
-              <p className="quiet-state">I turni e le aree assegnate non sono ancora disponibili via API: appariranno qui quando il contratto li includerà.</p>
+              <div className="panel-heading"><div><p className="eyebrow">TURNI</p><h3>Pianificazione del personale</h3></div><span className="count-pill">{turni.length}</span></div>
+              {messages.turni
+                ? <p className="quiet-state">{messages.turni}</p>
+                : turni.length === 0
+                  ? <p className="quiet-state">Nessun turno pianificato per questa edizione.</p>
+                  : (
+                    <div className="table-wrap">
+                      <table>
+                        <thead>
+                          <tr><th>Luogo</th><th>Mansione</th><th>Fascia oraria</th><th>Copertura</th><th>Note</th></tr>
+                        </thead>
+                        <tbody>
+                          {turni.map((item) => (
+                            <tr key={item.idTurno}>
+                              <td>{item.luogo} <small>{item.tipoLuogo === 'VARCO' ? 'varco' : 'padiglione'}</small></td>
+                              <td>{mansioneLabel(item.mansione)}</td>
+                              <td>{fasciaOraria(item)}</td>
+                              <td>
+                                {item.personeAssegnate}/{item.personePreviste}
+                                {item.personeMancanti > 0 && <span className="quality-tag"> {item.personeMancanti} mancanti</span>}
+                              </td>
+                              <td>{item.note ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
             </div>
             <div className="notice-section">
               <p className="form-note">Dalla schermata di <Link to="/scansione">scansione allo stand</Link> puoi registrare le visite, secondo le tue autorizzazioni.</p>

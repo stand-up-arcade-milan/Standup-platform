@@ -144,6 +144,27 @@ class PlatformApiControllerTest {
     }
 
     @Test
+    void staffReadsTurniWhileExhibitorIsRejected() {
+        when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
+        MockHttpServletRequest staff = request("GET", "/api/v1/turni");
+        staff.addParameter("anno", "2026");
+        staff.addHeader("Authorization", "Bearer " + tokens.issue("staff-user", "STAFF", null, 60));
+
+        ResponseEntity<?> response = controller.dispatch(staff, null);
+
+        assertEquals(200, response.getStatusCode().value());
+
+        MockHttpServletRequest exhibitor = request("GET", "/api/v1/turni");
+        exhibitor.addParameter("anno", "2026");
+        exhibitor.addHeader("Authorization", "Bearer " + tokens.issue("exhibitor-user", "ESPOSITORE", "CI-EXHIBITOR-01", 60));
+
+        ApiFailure failure = assertThrows(ApiFailure.class, () -> controller.dispatch(exhibitor, null));
+
+        assertEquals(403, failure.status());
+        assertEquals("RUOLO_NON_AUTORIZZATO", failure.code());
+    }
+
+    @Test
     void staffReadsAffluenzaKpiButDirectionKpiStaysReserved() {
         when(db.queryForList(anyString(), any(Object[].class))).thenReturn(List.of());
         MockHttpServletRequest affluenza = request("GET", "/api/v1/kpi/affluenza");
