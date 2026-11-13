@@ -17,6 +17,33 @@ type Edizione = {
 
 type Avviso = { id: string; titolo: string; testo: string; pubblicatoIl: string; attivo: boolean }
 
+function IconaBiglietto() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" /><path d="M13 11v2" /><path d="M13 17v2" />
+    </svg>
+  )
+}
+
+function IconaMappa() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+      <line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" />
+    </svg>
+  )
+}
+
+function IconaRegistrazione() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  )
+}
+
 const PERCHE: { titolo: string; testo: ReactNode }[] = [
   {
     titolo: 'Un festival, un solo portale',
@@ -113,6 +140,27 @@ function HomePage() {
       </div>
 
       {errore && <p className="alert alert--error" role="alert">{errore}</p>}
+
+      <div className="home-strip">
+        <article className="strip-card">
+          <IconaBiglietto />
+          <strong>Biglietteria aperta</strong>
+          <p>I biglietti si acquistano solo sulla biglietteria ufficiale esterna dell'evento.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+        <article className="strip-card">
+          <IconaMappa />
+          <strong>Catalogo e mappa stand</strong>
+          <p>L'elenco degli espositori e la mappa degli stand arrivano con le schermate dedicate.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+        <article className="strip-card">
+          <IconaRegistrazione />
+          <strong>Registrazione</strong>
+          <p>Registrazione visitatori e richiesta stand: in arrivo su questo portale.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+      </div>
 
       <section className="home-section" id="informazioni">
         <p className="eyebrow">INFO UTILI</p>
