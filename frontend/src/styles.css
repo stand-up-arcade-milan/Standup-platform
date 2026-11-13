@@ -343,11 +343,22 @@ td small { display: block; margin-top: .23rem; color: #938a99; font-size: .68rem
 .auth-guard { max-width: 34rem; margin: 2.5rem auto; display: grid; gap: .35rem; }
 .auth-guard .button { justify-self: start; margin-top: .6rem; }
 .auth-guard .muted { color: var(--muted); font-size: .82rem; }
-/* Home pubblica con ritmo da landing: hero, perché visitare, in breve, FAQ, avvisi. */
-.home-hero { padding: clamp(1.2rem,4vw,3rem) 0 0; }
-.home-hero h2 { max-width: 46rem; margin-bottom: .8rem; font-size: clamp(2.1rem,5vw,3.6rem); letter-spacing: -.06em; line-height: 1.05; }
-.home-hero__where { margin: 0; color: var(--lime); font-size: clamp(1rem,2vw,1.25rem); font-weight: 800; }
-.home-hero__lead { max-width: 40rem; margin: .8rem 0 0; color: var(--muted); line-height: 1.65; }
+/* Home pubblica in stile fiera: hero a tutta larghezza con banner, avvisi in griglia, info utili e FAQ. */
+.home-hero { position: relative; display: grid; align-items: center; min-height: min(72vh, 560px); margin-top: -1rem; padding: clamp(2rem,6vw,4rem) clamp(1.2rem,4vw,3rem); border: 1px solid var(--line); border-radius: 1.1rem; overflow: hidden; background: var(--ink) url(/arcade-banner.svg) center/cover no-repeat; }
+.home-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg,#171219f5 0%,#171219d9 52%,#17121973 100%); }
+.home-hero > * { position: relative; }
+.home-hero__content { display: grid; justify-items: start; gap: .55rem; max-width: 48rem; }
+.home-hero h2 { margin: 0; font-size: clamp(2.4rem,6vw,4.2rem); letter-spacing: -.06em; line-height: 1.02; }
+.home-hero__where { margin: 0; color: var(--lime); font-size: clamp(.95rem,2vw,1.2rem); font-weight: 800; }
+.home-hero__lead { max-width: 40rem; margin: .3rem 0 0; color: #d9d2df; line-height: 1.65; }
+.home-hero__ctas { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 1.1rem; }
+.home-cta-xl { min-height: 3.3rem; padding: .8rem 1.7rem; font-size: .95rem; letter-spacing: .1em; }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: .85rem; }
+.news-card { display: grid; gap: .45rem; align-content: start; padding: 1.05rem; border: 1px solid var(--line); border-radius: .85rem; background: linear-gradient(150deg,#241e27,#1c171f); }
+.news-card > div { display: flex; justify-content: space-between; align-items: center; gap: .6rem; }
+.news-card strong { font-size: .86rem; }
+.news-card > div > small { flex: 0 0 auto; color: #a9a1ae; font-size: .62rem; white-space: nowrap; }
+.news-card p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0; color: var(--muted); font-size: .75rem; line-height: 1.55; }
 .home-page .cta-row { display: flex; flex-wrap: wrap; gap: .7rem; margin: 1.4rem 0 .4rem; }
 .home-page .cta-row .button--dark { opacity: .75; }
 .home-section { margin-top: 2.4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }

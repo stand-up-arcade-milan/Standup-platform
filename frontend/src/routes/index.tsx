@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, formatDate } from '../services/api'
+import { useAuth } from '../components/AuthProvider'
+import { homeFor } from '../services/auth'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
@@ -31,6 +33,8 @@ const PERCHE: { titolo: string; testo: ReactNode }[] = [
 ]
 
 function HomePage() {
+  const { session } = useAuth()
+  const navigate = useNavigate()
   const [edizioni, setEdizioni] = useState<Edizione[]>([])
   const [avvisi, setAvvisi] = useState<Avviso[]>([])
   const [errore, setErrore] = useState<string | null>(null)
@@ -73,46 +77,45 @@ function HomePage() {
     },
   ]
 
+  const scorriA = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+
   return (
     <section className="home-page">
       <div className="home-hero">
-        <p className="eyebrow">ARCADE MILANO &middot; {attiva?.anno ?? 2026}</p>
-        <h2>Benvenuto al festival del gaming e della cultura pop</h2>
-        <p className="home-hero__where">
-          Milano{dateFiera ? `, ${dateFiera}` : ' \u00b7 date in definizione'}
-        </p>
-        <p className="home-hero__lead">
-          Tre giorni di fiera, community e gioco: un unico portale per visitatori, espositori e staff,
-          con le informazioni ufficiali dell'organizzazione sempre aggiornate.
-        </p>
-        <div className="cta-row">
-          <Link className="button button--lime" to="/accesso">Accedi al portale</Link>
-          <button type="button" className="button button--dark" disabled title="Registrazione visitatori in arrivo">
-            Registrati come visitatore
-          </button>
-          <button type="button" className="button button--dark" disabled title="Richiesta stand in arrivo">
-            Richiedi uno stand
-          </button>
+        <div className="home-hero__content">
+          <p className="eyebrow">STAND UP PRESENTA</p>
+          <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
+          <p className="home-hero__where">
+            Gaming e cultura pop, tutto in un posto
+            {dateFiera ? ` \u00b7 ${dateFiera}` : ''}
+            {attiva?.sede ? ` \u00b7 ${attiva.sede}` : ''}
+          </p>
+          <p className="home-hero__lead">
+            Tre giorni aperti al pubblico: tornei, anteprime, cosplay e creator. Le informazioni
+            ufficiali dell'organizzazione arrivano da questo portale.
+          </p>
+          <div className="home-hero__ctas">
+            <button type="button" className="button button--lime home-cta-xl" onClick={() => scorriA('informazioni')}>
+              VISITA
+            </button>
+            <button type="button" className="button button--outline home-cta-xl" onClick={() => scorriA('faq')}>
+              ESPONI
+            </button>
+            {session ? (
+              <button type="button" className="button button--dark" onClick={() => void navigate({ to: homeFor(session.role) })}>
+                Vai alla tua area
+              </button>
+            ) : (
+              <Link className="button button--dark" to="/accesso">Accedi al portale</Link>
+            )}
+          </div>
         </div>
       </div>
 
       {errore && <p className="alert alert--error" role="alert">{errore}</p>}
 
-      <section className="home-section">
-        <p className="eyebrow">PERCH\u00c9 VISITARE</p>
-        <h3>Perché venire ad ARCADE</h3>
-        <div className="why-grid">
-          {PERCHE.map((item) => (
-            <article className="why-card" key={item.titolo}>
-              <strong>{item.titolo}</strong>
-              <p>{item.testo}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="home-section">
-        <p className="eyebrow">IN BREVE</p>
+      <section className="home-section" id="informazioni">
+        <p className="eyebrow">INFO UTILI</p>
         <h3>ARCADE in breve</h3>
         <div className="home-brief">
           <div className="brief-item">
@@ -134,6 +137,36 @@ function HomePage() {
       </section>
 
       <section className="home-section">
+        <div className="panel-heading">
+          <div><p className="eyebrow">NOVITÀ E AVVISI</p><h3>Comunicazioni per i visitatori</h3></div>
+          <span className="count-pill">{avvisi.length}</span>
+        </div>
+        {avvisi.length === 0
+          ? <p className="quiet-state">Nessun avviso pubblico al momento.</p>
+          : <div className="news-grid">
+              {avvisi.map((item) => (
+                <article className="news-card" key={item.id}>
+                  <div><strong>{item.titolo}</strong><small>{formatDate(item.pubblicatoIl)}</small></div>
+                  <p>{item.testo}</p>
+                </article>
+              ))}
+            </div>}
+      </section>
+
+      <section className="home-section">
+        <p className="eyebrow">PERCHÉ VISITARE</p>
+        <h3>Perché venire ad ARCADE</h3>
+        <div className="why-grid">
+          {PERCHE.map((item) => (
+            <article className="why-card" key={item.titolo}>
+              <strong>{item.titolo}</strong>
+              <p>{item.testo}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section" id="faq">
         <p className="eyebrow">FAQ</p>
         <h3>Domande frequenti</h3>
         <div className="faq-list">
@@ -143,23 +176,6 @@ function HomePage() {
               <p>{item.risposta}</p>
             </details>
           ))}
-        </div>
-      </section>
-
-      <section className="home-section">
-        <div className="panel">
-          <div className="panel-heading">
-            <div><p className="eyebrow">AVVISI PUBBLICI</p><h3>Comunicazioni per i visitatori</h3></div>
-            <span className="count-pill">{avvisi.length}</span>
-          </div>
-          {avvisi.length === 0
-            ? <p className="quiet-state">Nessun avviso pubblico al momento.</p>
-            : avvisi.map((item) => (
-              <article className="notice-card" key={item.id}>
-                <div><strong>{item.titolo}</strong><small>{formatDate(item.pubblicatoIl)}</small></div>
-                <p>{item.testo}</p>
-              </article>
-            ))}
         </div>
       </section>
 
