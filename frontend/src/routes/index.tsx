@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, formatDate } from '../services/api'
+import { useAuth } from '../components/AuthProvider'
+import { homeFor } from '../services/auth'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
@@ -14,6 +16,33 @@ type Edizione = {
 }
 
 type Avviso = { id: string; titolo: string; testo: string; pubblicatoIl: string; attivo: boolean }
+
+function IconaBiglietto() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" /><path d="M13 11v2" /><path d="M13 17v2" />
+    </svg>
+  )
+}
+
+function IconaMappa() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+      <line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" />
+    </svg>
+  )
+}
+
+function IconaRegistrazione() {
+  return (
+    <svg className="strip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  )
+}
 
 const PERCHE: { titolo: string; testo: ReactNode }[] = [
   {
@@ -31,6 +60,8 @@ const PERCHE: { titolo: string; testo: ReactNode }[] = [
 ]
 
 function HomePage() {
+  const { session } = useAuth()
+  const navigate = useNavigate()
   const [edizioni, setEdizioni] = useState<Edizione[]>([])
   const [avvisi, setAvvisi] = useState<Avviso[]>([])
   const [errore, setErrore] = useState<string | null>(null)
@@ -73,47 +104,73 @@ function HomePage() {
     },
   ]
 
+  const scorriA = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+
   return (
     <section className="home-page">
+      <img className="home-hero__banner" src="/arcade-banner.svg" alt="Banner ufficiale di ARCADE Milano" />
       <div className="home-hero">
-        <p className="eyebrow">ARCADE MILANO &middot; {attiva?.anno ?? 2026}</p>
-        <h2>Benvenuto al festival del gaming e della cultura pop</h2>
+        <p className="eyebrow">STAND UP PRESENTA</p>
+        <h2>ARCADE Milano {attiva?.anno ?? 2026}</h2>
         <p className="home-hero__where">
-          Milano{dateFiera ? `, ${dateFiera}` : ' \u00b7 date in definizione'}
+          Gaming e cultura pop, tutto in un posto
+          {dateFiera ? ` \u00b7 ${dateFiera}` : ''}
+          {attiva?.sede ? ` \u00b7 ${attiva.sede}` : ''}
         </p>
         <p className="home-hero__lead">
-          Tre giorni di fiera, community e gioco: un unico portale per visitatori, espositori e staff,
-          con le informazioni ufficiali dell'organizzazione sempre aggiornate.
+          Tre giorni aperti al pubblico: tornei, anteprime, cosplay e creator. Le informazioni
+          ufficiali dell'organizzazione arrivano da questo portale.
         </p>
-        <div className="cta-row">
-          <Link className="button button--lime" to="/accesso">Accedi al portale</Link>
-          <button type="button" className="button button--dark" disabled title="Registrazione visitatori in arrivo">
-            Registrati come visitatore
+        <div className="hero-meta">
+          {dateFiera && <span>{dateFiera}</span>}
+          {attiva?.sede && <span>{attiva.sede}</span>}
+          {statoLabel && <span>Edizione {statoLabel}</span>}
+        </div>
+        <div className="home-hero__ctas">
+          <button type="button" className="button button--lime home-cta-xl" onClick={() => scorriA('informazioni')}>
+            VISITA
           </button>
-          <button type="button" className="button button--dark" disabled title="Richiesta stand in arrivo">
-            Richiedi uno stand
+          <button type="button" className="button button--outline home-cta-xl" onClick={() => scorriA('faq')}>
+            ESPONI
           </button>
+          {session ? (
+            <button type="button" className="button button--dark" onClick={() => void navigate({ to: homeFor(session.role) })}>
+              Vai alla tua area
+            </button>
+          ) : (
+            <Link className="button button--dark" to="/accesso">Accedi al portale</Link>
+          )}
         </div>
       </div>
 
       {errore && <p className="alert alert--error" role="alert">{errore}</p>}
 
-      <section className="home-section">
-        <p className="eyebrow">PERCH\u00c9 VISITARE</p>
-        <h3>Perché venire ad ARCADE</h3>
-        <div className="why-grid">
-          {PERCHE.map((item) => (
-            <article className="why-card" key={item.titolo}>
-              <strong>{item.titolo}</strong>
-              <p>{item.testo}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <div className="home-strip">
+        <article className="strip-card">
+          <IconaBiglietto />
+          <strong>Biglietteria aperta</strong>
+          <p>I biglietti si acquistano solo sulla biglietteria ufficiale esterna dell'evento.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+        <article className="strip-card">
+          <IconaMappa />
+          <strong>Catalogo e mappa stand</strong>
+          <p>L'elenco degli espositori e la mappa degli stand arrivano con le schermate dedicate.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+        <article className="strip-card">
+          <IconaRegistrazione />
+          <strong>Registrazione</strong>
+          <p>Registrazione visitatori e richiesta stand: in arrivo su questo portale.</p>
+          <button type="button" className="text-button" onClick={() => scorriA('faq')}>DI PIÙ</button>
+        </article>
+      </div>
 
-      <section className="home-section">
-        <p className="eyebrow">IN BREVE</p>
-        <h3>ARCADE in breve</h3>
+      <section className="home-section" id="informazioni">
+        <div className="section-head">
+          <p className="eyebrow">INFO UTILI</p>
+          <h3>ARCADE in breve</h3>
+        </div>
         <div className="home-brief">
           <div className="brief-item">
             <span>DOVE</span>
@@ -134,8 +191,42 @@ function HomePage() {
       </section>
 
       <section className="home-section">
-        <p className="eyebrow">FAQ</p>
-        <h3>Domande frequenti</h3>
+        <div className="section-head">
+          <p className="eyebrow">NOVITÀ E AVVISI</p>
+          <h3>Comunicazioni per i visitatori <span className="count-pill">{avvisi.length}</span></h3>
+        </div>
+        {avvisi.length === 0
+          ? <p className="quiet-state">Nessun avviso pubblico al momento.</p>
+          : <div className="news-grid">
+              {avvisi.map((item) => (
+                <article className="news-card" key={item.id}>
+                  <div><strong>{item.titolo}</strong><small>{formatDate(item.pubblicatoIl)}</small></div>
+                  <p>{item.testo}</p>
+                </article>
+              ))}
+            </div>}
+      </section>
+
+      <section className="home-section">
+        <div className="section-head">
+          <p className="eyebrow">PERCHÉ VISITARE</p>
+          <h3>Perché venire ad ARCADE</h3>
+        </div>
+        <div className="why-grid">
+          {PERCHE.map((item) => (
+            <article className="why-card" key={item.titolo}>
+              <strong>{item.titolo}</strong>
+              <p>{item.testo}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section" id="faq">
+        <div className="section-head">
+          <p className="eyebrow">FAQ</p>
+          <h3>Domande frequenti</h3>
+        </div>
         <div className="faq-list">
           {faq.map((item) => (
             <details key={item.domanda}>
@@ -146,22 +237,14 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="home-section">
-        <div className="panel">
-          <div className="panel-heading">
-            <div><p className="eyebrow">AVVISI PUBBLICI</p><h3>Comunicazioni per i visitatori</h3></div>
-            <span className="count-pill">{avvisi.length}</span>
-          </div>
-          {avvisi.length === 0
-            ? <p className="quiet-state">Nessun avviso pubblico al momento.</p>
-            : avvisi.map((item) => (
-              <article className="notice-card" key={item.id}>
-                <div><strong>{item.titolo}</strong><small>{formatDate(item.pubblicatoIl)}</small></div>
-                <p>{item.testo}</p>
-              </article>
-            ))}
+      <div className="organized-by">
+        <span className="brand-mark">S</span>
+        <div>
+          <p className="eyebrow">ORGANIZED BY</p>
+          <strong>Stand up</strong>
+          <small>il team che progetta e costruisce la piattaforma di ARCADE Milano</small>
         </div>
-      </section>
+      </div>
 
       <p className="footnote">
         I biglietti si acquistano solo sulla biglietteria esterna: questa piattaforma non vende né emette biglietti.
