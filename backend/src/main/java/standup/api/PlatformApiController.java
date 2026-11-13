@@ -956,9 +956,8 @@ public class PlatformApiController {
         Integer anno=null;
         if(raw!=null&&!raw.isBlank()) { try{anno=Integer.valueOf(raw.trim());}catch(NumberFormatException e){throw new ApiFailure(400,"EDIZIONE_NON_VALIDA","L'edizione richiesta non è valida.");} }
         return items(db.queryForList("""
-                SELECT id_turno,anno AS edizione,coalesce(varco,padiglione) AS luogo,
-                       CASE WHEN varco IS NOT NULL THEN 'VARCO' ELSE 'PADIGLIONE' END AS tipo_luogo,
-                       mansione,inizio,fine,persone_previste,persone_assegnate,persone_mancanti,note
+                SELECT id_turno,anno AS edizione,luogo,tipo_luogo,mansione,inizio,fine,
+                       persone_previste,persone_assegnate,persone_mancanti,note
                 FROM arcade.v_turno_copertura
                 WHERE (?::int IS NULL OR anno=?)
                 ORDER BY inizio,luogo
