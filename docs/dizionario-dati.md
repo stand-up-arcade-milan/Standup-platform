@@ -18,7 +18,7 @@ python scripts/dati/genera_doc_dizionario.py --dsn postgresql://arcade_admin:arc
 | RISERVATO | Quasi-identificatore o dato di uno solo | Proprietario, oppure solo aggregato |
 | PERSONALE | Identifica una persona | Solo chi gestisce i dati personali |
 
-Il database contiene 59 tabelle e 361 colonne.
+Il database contiene 60 tabelle e 368 colonne.
 
 ## Edizione e luoghi
 
@@ -587,6 +587,20 @@ Account di accesso della direzione di ARCADE. Titolare: Sicurezza. Livello della
 | `updated_at` | `timestamp with time zone` | Orario dell'ultima modifica | INTERNO |
 | `ultimo_accesso` | `timestamp with time zone` | Orario dell'ultimo accesso | INTERNO |
 | `email_verificata` | `boolean` | Vero se email verificata | INTERNO |
+
+### account_interno
+
+Account di accesso di staff, commerciale e amministrazione. Titolare: Sicurezza. Livello della tabella: PERSONALE.
+
+| Colonna | Tipo | Descrizione | Livello |
+|---|---|---|---|
+| `id_account` | `uuid` | Identificativo dell'account interno | RISERVATO |
+| `email` | `text` | Email di accesso dell'account interno | PERSONALE |
+| `password_hash` | `text` | Impronta della password, mai la password | RISERVATO |
+| `ruolo` | `text` | Ruolo operativo: staff, commerciale o amministratore | INTERNO |
+| `attivo` | `boolean` | Se l'account è attivo | INTERNO |
+| `creato_il` | `timestamp with time zone` | Creazione dell'account | INTERNO |
+| `ultimo_accesso` | `timestamp with time zone` | Ultimo accesso riuscito | INTERNO |
 
 ### account_espositore
 
