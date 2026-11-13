@@ -25,7 +25,7 @@ La suite locale riproduce il job integrato da PowerShell:
 .\scripts\test\run-integration.ps1
 ```
 
-Richiede Docker Desktop, Node.js e accesso a npm al primo download di Newman. Avvia un progetto Compose casuale con credenziali e porte temporanee, carica il fixture sintetico, esegue i test e ferma i container. Il volume PostgreSQL di test viene conservato per diagnosi; lo stack e il volume importato `standup-import` non vengono usati né modificati. L'opzione `-SkipPostman` salta solo Newman.
+Richiede Docker Desktop; le verifiche del frontend usano Bun, mentre Node.js e npm servono solo al primo download di Newman tramite `npx`. Avvia un progetto Compose casuale con credenziali e porte temporanee, carica il fixture sintetico, esegue i test e ferma i container. Il volume PostgreSQL di test viene conservato per diagnosi; lo stack e il volume importato `standup-import` non vengono usati né modificati. L'opzione `-SkipPostman` salta solo Newman.
 
 Queste prove coprono backend, database e API HTTP insieme, non simulano l'integrazione reale con Power Apps/Power BI, il provider OIDC, l'invio email o il browser fisico dello scanner. La home del frontend e il proxy API passano uno smoke test e la build front-end passa separatamente; i test di processo non usano una sessione browser automatizzata.
 
