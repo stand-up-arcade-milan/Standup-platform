@@ -227,6 +227,15 @@ function HomePage() {
         </div>
       </section>
 
+      <div className="organized-by">
+        <span className="brand-mark">S</span>
+        <div>
+          <p className="eyebrow">ORGANIZED BY</p>
+          <strong>Stand up</strong>
+          <small>il team che progetta e costruisce la piattaforma di ARCADE Milano</small>
+        </div>
+      </div>
+
       <p className="footnote">
         I biglietti si acquistano solo sulla biglietteria esterna: questa piattaforma non vende né emette biglietti.
       </p>
