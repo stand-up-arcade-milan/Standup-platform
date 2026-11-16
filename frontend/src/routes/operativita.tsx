@@ -77,6 +77,8 @@ function dimensioneRilevante(item: KpiItem): string {
   return key ? `${key}: ${dimensions[key]}` : 'evento'
 }
 
+const INTERVALLO_AGGIORNAMENTO_MS = 30_000
+
 function OperationsPage() {
   const [editions, setEditions] = useState<Edition[]>([])
   const [edition, setEdition] = useState('')
@@ -85,6 +87,7 @@ function OperationsPage() {
   const [turni, setTurni] = useState<Turno[]>([])
   const [messages, setMessages] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [letturaAlle, setLetturaAlle] = useState<Date | null>(null)
 
   useEffect(() => {
     api<{ items: Edition[] }>('/edizioni')
@@ -96,10 +99,12 @@ function OperationsPage() {
       .catch((error: unknown) => setMessages((current) => ({ ...current, editions: error instanceof Error ? error.message : 'Edizioni non disponibili.' })))
   }, [])
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (inBackground = false) => {
     if (!edition) return
-    setLoading(true)
-    setMessages({})
+    if (!inBackground) {
+      setLoading(true)
+      setMessages({})
+    }
     const results = await Promise.allSettled([
       api<{ items: KpiItem[] }>(`/kpi/affluenza?edizione=${edition}`, {}, 'exhibitor'),
       api<{ items: Notice[] }>('/avvisi?pubblico=STAFF', {}, 'exhibitor'),
@@ -114,10 +119,22 @@ function OperationsPage() {
     if (avvisi.status === 'rejected') failures.notices = avvisi.reason instanceof Error ? avvisi.reason.message : 'Avvisi non disponibili.'
     if (turniRisultato.status === 'rejected') failures.turni = turniRisultato.reason instanceof Error ? turniRisultato.reason.message : 'Turni non disponibili.'
     setMessages(failures)
+    setLetturaAlle(new Date())
     setLoading(false)
   }, [edition])
 
   useEffect(() => { void load() }, [load])
+
+  // RF-20: i dati restano aggiornati senza ricaricare la pagina; in background solo se la scheda è visibile.
+  useEffect(() => {
+    const aggiorna = () => { if (document.visibilityState === 'visible') void load(true) }
+    const timer = window.setInterval(aggiorna, INTERVALLO_AGGIORNAMENTO_MS)
+    document.addEventListener('visibilitychange', aggiorna)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', aggiorna)
+    }
+  }, [load])
 
   const byCode = new Map<string, KpiItem[]>()
   for (const item of kpis) {
@@ -138,6 +155,11 @@ function OperationsPage() {
             <p className="eyebrow">ARCADE MILANO · OPERATIVITÀ</p>
             <h2>Operatività evento</h2>
             <p className="intro">Affluenza per varco e padiglione, saturazione rispetto alla capienza e avvisi operativi per lo staff.</p>
+            <p className="form-note" aria-live="polite">
+              {letturaAlle
+                ? `Dati letti alle ${letturaAlle.toLocaleTimeString('it-IT')} · aggiornamento automatico ogni ${INTERVALLO_AGGIORNAMENTO_MS / 1000} secondi`
+                : 'Lettura dei dati in corso…'}
+            </p>
           </div>
           <div className="edition-picker">
             <label>
