@@ -57,7 +57,7 @@ function HomePage() {
     },
     {
       domanda: 'Dove acquisto i biglietti?',
-      risposta: <>Solo sulla <strong>biglietteria esterna</strong> dell'evento: questa piattaforma non vende né emette biglietti.</>,
+      risposta: <>Dalla pagina <Link to="/biglietteria">biglietteria</Link> del portale, in arrivo a breve.</>,
     },
     {
       domanda: 'Come mi registro come visitatore?',
@@ -97,7 +97,7 @@ function HomePage() {
               Richiedi uno stand
             </button>
           </div>
-          <p className="home-hero__nota">I biglietti si acquistano solo sulla biglietteria esterna dell'evento.</p>
+          <p className="home-hero__nota">I biglietti si acquistano dalla <Link to="/biglietteria">pagina biglietteria</Link>.</p>
         </div>
       </div>
 
@@ -132,8 +132,8 @@ function HomePage() {
           </div>
           <div className="brief-item">
             <span>BIGLIETTI</span>
-            <strong>Biglietteria esterna</strong>
-            <small>la piattaforma non vende né emette biglietti</small>
+            <strong>In arrivo</strong>
+            <small><Link to="/biglietteria">pagina biglietteria</Link></small>
           </div>
         </div>
       </section>
@@ -170,7 +170,7 @@ function HomePage() {
       </section>
 
       <p className="footnote">
-        I biglietti si acquistano solo sulla biglietteria esterna: questa piattaforma non vende né emette biglietti.
+        I biglietti si acquistano dalla <Link to="/biglietteria">pagina biglietteria</Link> del portale, in arrivo a breve.
       </p>
     </section>
   )

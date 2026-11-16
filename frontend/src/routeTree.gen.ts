@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccessoRouteImport } from './routes/accesso'
+import { Route as BiglietteriaRouteImport } from './routes/biglietteria'
 import { Route as CommercialeRouteImport } from './routes/commerciale'
 import { Route as EspositoreRouteImport } from './routes/espositore'
 import { Route as PannelloControlloRouteImport } from './routes/pannello-controllo'
@@ -30,6 +31,11 @@ const AboutRoute = AboutRouteImport.update({
 const AccessoRoute = AccessoRouteImport.update({
   id: '/accesso',
   path: '/accesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiglietteriaRoute = BiglietteriaRouteImport.update({
+  id: '/biglietteria',
+  path: '/biglietteria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommercialeRoute = CommercialeRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/pannello-controllo': typeof PannelloControlloRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/pannello-controllo': typeof PannelloControlloRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/pannello-controllo': typeof PannelloControlloRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
     | '/commerciale'
     | '/espositore'
     | '/pannello-controllo'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
     | '/commerciale'
     | '/espositore'
     | '/pannello-controllo'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
     | '/commerciale'
     | '/espositore'
     | '/pannello-controllo'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccessoRoute: typeof AccessoRoute
+  BiglietteriaRoute: typeof BiglietteriaRoute
   CommercialeRoute: typeof CommercialeRoute
   EspositoreRoute: typeof EspositoreRoute
   PannelloControlloRoute: typeof PannelloControlloRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/accesso'
       fullPath: '/accesso'
       preLoaderRoute: typeof AccessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biglietteria': {
+      id: '/biglietteria'
+      path: '/biglietteria'
+      fullPath: '/biglietteria'
+      preLoaderRoute: typeof BiglietteriaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commerciale': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccessoRoute: AccessoRoute,
+  BiglietteriaRoute: BiglietteriaRoute,
   CommercialeRoute: CommercialeRoute,
   EspositoreRoute: EspositoreRoute,
   PannelloControlloRoute: PannelloControlloRoute,
