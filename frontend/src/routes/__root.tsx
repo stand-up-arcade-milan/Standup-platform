@@ -18,6 +18,7 @@ const RUOLI_LABEL: Record<string, string> = {
 type NavItem = { to: string; label: string; roles: string[] }
 
 const NAV: NavItem[] = [
+  { to: '/pannello-controllo', label: 'Cruscotto', roles: ['DIREZIONE', 'AMMINISTRATORE'] },
   { to: '/operativita', label: 'Operatività evento', roles: ['STAFF', 'DIREZIONE', 'AMMINISTRATORE'] },
   { to: '/commerciale', label: 'Commerciale', roles: ['COMMERCIALE', 'AMMINISTRATORE'] },
   { to: '/espositore', label: 'Area espositore', roles: ['ESPOSITORE', 'AMMINISTRATORE'] },

@@ -15,6 +15,7 @@ import { Route as AccessoRouteImport } from './routes/accesso'
 import { Route as CommercialeRouteImport } from './routes/commerciale'
 import { Route as EspositoreRouteImport } from './routes/espositore'
 import { Route as OperativitaRouteImport } from './routes/operativita'
+import { Route as PannelloControlloRouteImport } from './routes/pannello-controllo'
 import { Route as ScansioneRouteImport } from './routes/scansione'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const OperativitaRoute = OperativitaRouteImport.update({
   path: '/operativita',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PannelloControlloRoute = PannelloControlloRouteImport.update({
+  id: '/pannello-controllo',
+  path: '/pannello-controllo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScansioneRoute = ScansioneRouteImport.update({
   id: '/scansione',
   path: '/scansione',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
+  '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
+  '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
+  '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/commerciale'
     | '/espositore'
     | '/operativita'
+    | '/pannello-controllo'
     | '/scansione'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/commerciale'
     | '/espositore'
     | '/operativita'
+    | '/pannello-controllo'
     | '/scansione'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/commerciale'
     | '/espositore'
     | '/operativita'
+    | '/pannello-controllo'
     | '/scansione'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   CommercialeRoute: typeof CommercialeRoute
   EspositoreRoute: typeof EspositoreRoute
   OperativitaRoute: typeof OperativitaRoute
+  PannelloControlloRoute: typeof PannelloControlloRoute
   ScansioneRoute: typeof ScansioneRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperativitaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pannello-controllo': {
+      id: '/pannello-controllo'
+      path: '/pannello-controllo'
+      fullPath: '/pannello-controllo'
+      preLoaderRoute: typeof PannelloControlloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scansione': {
       id: '/scansione'
       path: '/scansione'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommercialeRoute: CommercialeRoute,
   EspositoreRoute: EspositoreRoute,
   OperativitaRoute: OperativitaRoute,
+  PannelloControlloRoute: PannelloControlloRoute,
   ScansioneRoute: ScansioneRoute,
 }
 export const routeTree = rootRouteImport
