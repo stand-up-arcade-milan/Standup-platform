@@ -51,7 +51,7 @@ AREE: dict[str, list[str]] = {
         "revoca_registrazione_visitatore",
     ],
     "Identità e accesso": [
-        "account_direzione", "account_espositore", "invito_espositore", "recupero_password",
+        "account_direzione", "account_espositore", "account_interno", "invito_espositore", "recupero_password",
         "fornitore_identita", "identita_esterna", "auth_login_rate_limit",
     ],
     "Registro degli accessi": [
@@ -113,6 +113,7 @@ DESCRIZIONI: dict[str, str] = {
     "revoca_registrazione_visitatore": "Token con cui il visitatore modifica o revoca i consensi",
     "account_direzione": "Account di accesso della direzione di ARCADE",
     "account_espositore": "Account di accesso degli espositori",
+    "account_interno": "Account di accesso di staff, commerciale e amministrazione",
     "invito_espositore": "Inviti monouso per la prima attivazione di un account",
     "recupero_password": "Token monouso per reimpostare la password",
     "auth_login_rate_limit": "Conteggio dei tentativi di accesso falliti, per bloccare chi insiste",

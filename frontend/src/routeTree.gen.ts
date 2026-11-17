@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccessoRouteImport } from './routes/accesso'
 import { Route as CommercialeRouteImport } from './routes/commerciale'
 import { Route as EspositoreRouteImport } from './routes/espositore'
+import { Route as OperativitaRouteImport } from './routes/operativita'
 import { Route as PannelloControlloRouteImport } from './routes/pannello-controllo'
 import { Route as ScansioneRouteImport } from './routes/scansione'
 
@@ -42,6 +43,11 @@ const EspositoreRoute = EspositoreRouteImport.update({
   path: '/espositore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperativitaRoute = OperativitaRouteImport.update({
+  id: '/operativita',
+  path: '/operativita',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PannelloControlloRoute = PannelloControlloRouteImport.update({
   id: '/pannello-controllo',
   path: '/pannello-controllo',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
+  '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
+  '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/accesso': typeof AccessoRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
+  '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/accesso'
     | '/commerciale'
     | '/espositore'
+    | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/accesso'
     | '/commerciale'
     | '/espositore'
+    | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/accesso'
     | '/commerciale'
     | '/espositore'
+    | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   AccessoRoute: typeof AccessoRoute
   CommercialeRoute: typeof CommercialeRoute
   EspositoreRoute: typeof EspositoreRoute
+  OperativitaRoute: typeof OperativitaRoute
   PannelloControlloRoute: typeof PannelloControlloRoute
   ScansioneRoute: typeof ScansioneRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspositoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operativita': {
+      id: '/operativita'
+      path: '/operativita'
+      fullPath: '/operativita'
+      preLoaderRoute: typeof OperativitaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pannello-controllo': {
       id: '/pannello-controllo'
       path: '/pannello-controllo'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccessoRoute: AccessoRoute,
   CommercialeRoute: CommercialeRoute,
   EspositoreRoute: EspositoreRoute,
+  OperativitaRoute: OperativitaRoute,
   PannelloControlloRoute: PannelloControlloRoute,
   ScansioneRoute: ScansioneRoute,
 }
