@@ -12,11 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccessoRouteImport } from './routes/accesso'
+import { Route as BiglietteriaRouteImport } from './routes/biglietteria'
+import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as CommercialeRouteImport } from './routes/commerciale'
 import { Route as EspositoreRouteImport } from './routes/espositore'
 import { Route as OperativitaRouteImport } from './routes/operativita'
 import { Route as PannelloControlloRouteImport } from './routes/pannello-controllo'
 import { Route as ScansioneRouteImport } from './routes/scansione'
+import { Route as SedeRouteImport } from './routes/sede'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,6 +34,16 @@ const AboutRoute = AboutRouteImport.update({
 const AccessoRoute = AccessoRouteImport.update({
   id: '/accesso',
   path: '/accesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiglietteriaRoute = BiglietteriaRouteImport.update({
+  id: '/biglietteria',
+  path: '/biglietteria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommercialeRoute = CommercialeRouteImport.update({
@@ -58,37 +71,51 @@ const ScansioneRoute = ScansioneRouteImport.update({
   path: '/scansione',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SedeRoute = SedeRouteImport.update({
+  id: '/sede',
+  path: '/sede',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
+  '/calendario': typeof CalendarioRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
+  '/sede': typeof SedeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
+  '/calendario': typeof CalendarioRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
+  '/sede': typeof SedeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accesso': typeof AccessoRoute
+  '/biglietteria': typeof BiglietteriaRoute
+  '/calendario': typeof CalendarioRoute
   '/commerciale': typeof CommercialeRoute
   '/espositore': typeof EspositoreRoute
   '/operativita': typeof OperativitaRoute
   '/pannello-controllo': typeof PannelloControlloRoute
   '/scansione': typeof ScansioneRoute
+  '/sede': typeof SedeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,42 +123,54 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
+    | '/calendario'
     | '/commerciale'
     | '/espositore'
     | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
+    | '/sede'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
+    | '/calendario'
     | '/commerciale'
     | '/espositore'
     | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
+    | '/sede'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/accesso'
+    | '/biglietteria'
+    | '/calendario'
     | '/commerciale'
     | '/espositore'
     | '/operativita'
     | '/pannello-controllo'
     | '/scansione'
+    | '/sede'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccessoRoute: typeof AccessoRoute
+  BiglietteriaRoute: typeof BiglietteriaRoute
+  CalendarioRoute: typeof CalendarioRoute
   CommercialeRoute: typeof CommercialeRoute
   EspositoreRoute: typeof EspositoreRoute
   OperativitaRoute: typeof OperativitaRoute
   PannelloControlloRoute: typeof PannelloControlloRoute
   ScansioneRoute: typeof ScansioneRoute
+  SedeRoute: typeof SedeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -155,6 +194,20 @@ declare module '@tanstack/react-router' {
       path: '/accesso'
       fullPath: '/accesso'
       preLoaderRoute: typeof AccessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biglietteria': {
+      id: '/biglietteria'
+      path: '/biglietteria'
+      fullPath: '/biglietteria'
+      preLoaderRoute: typeof BiglietteriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commerciale': {
@@ -192,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScansioneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sede': {
+      id: '/sede'
+      path: '/sede'
+      fullPath: '/sede'
+      preLoaderRoute: typeof SedeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -199,11 +259,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccessoRoute: AccessoRoute,
+  BiglietteriaRoute: BiglietteriaRoute,
+  CalendarioRoute: CalendarioRoute,
   CommercialeRoute: CommercialeRoute,
   EspositoreRoute: EspositoreRoute,
   OperativitaRoute: OperativitaRoute,
   PannelloControlloRoute: PannelloControlloRoute,
   ScansioneRoute: ScansioneRoute,
+  SedeRoute: SedeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
