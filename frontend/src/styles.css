@@ -389,3 +389,19 @@ td small { display: block; margin-top: .23rem; color: #938a99; font-size: .68rem
 @media (max-width: 820px) {
   .why-grid, .home-brief { grid-template-columns: 1fr; }
 }
+
+.brief-item__icona { width: 2.4rem; height: 2.4rem; color: #8fe3b8; margin-bottom: .15rem; }
+.brief-item--link { text-decoration: none; color: inherit; cursor: pointer; transition: transform .15s ease, border-color .15s ease; }
+.brief-item--link:hover { transform: translateY(-2px); border-color: #8fe3b8; }
+
+.brief-item--biglietti { border-color: var(--brick); background: linear-gradient(150deg,#4d2425,#311d21 70%,#211b24); }
+.brief-item--biglietti .brief-item__icona { color: #ff9a8a; }
+.brief-item--biglietti:hover { border-color: #ff9a8a; }
+.brief-item__icona--biglietto { width: 2.9rem; height: auto; }
+
+.brief-item--sede { border-color: var(--teal); background: linear-gradient(150deg,#1e4038,#1a2e2a 70%,#211b24); }
+.brief-item--sede .brief-item__icona { color: #7fd6b8; }
+.brief-item--sede:hover { border-color: #7fd6b8; }
+.brief-item--calendario { border-color: var(--lime); background: linear-gradient(150deg,#3c441f,#262a1b 70%,#211b24); }
+.brief-item--calendario .brief-item__icona { color: var(--lime); }
+.brief-item--calendario:hover { border-color: var(--lime); }

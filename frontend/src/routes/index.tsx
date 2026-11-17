@@ -120,21 +120,24 @@ function HomePage() {
         <p className="eyebrow">IN BREVE</p>
         <h3>ARCADE in breve</h3>
         <div className="home-brief">
-          <div className="brief-item">
+          <Link to="/sede" className="brief-item brief-item--link brief-item--sede">
+            <IconaSede />
             <span>DOVE</span>
             <strong>{attiva?.sede ?? 'Sede in definizione'}</strong>
-            <small>Milano</small>
-          </div>
-          <div className="brief-item">
+            <small>Milano &middot; vai alla mappa &rarr;</small>
+          </Link>
+          <Link to="/calendario" className="brief-item brief-item--link brief-item--calendario">
+            <IconaCalendario />
             <span>QUANDO</span>
             <strong>{dateFiera ?? 'Date in definizione'}</strong>
-            <small>{statoLabel ? `edizione ${attiva?.anno} \u00b7 ${statoLabel}` : 'edizione in definizione'}</small>
-          </div>
-          <div className="brief-item">
+            <small>{statoLabel ? `edizione ${attiva?.anno} \u00b7 ${statoLabel}` : 'edizione in definizione'} &middot; masterclass &rarr;</small>
+          </Link>
+          <Link to="/biglietteria" className="brief-item brief-item--link brief-item--biglietti">
+            <IconaBiglietto />
             <span>BIGLIETTI</span>
             <strong>In arrivo</strong>
-            <small><Link to="/biglietteria">pagina biglietteria</Link></small>
-          </div>
+            <small>Vai alla pagina biglietteria &rarr;</small>
+          </Link>
         </div>
       </section>
 
@@ -186,6 +189,37 @@ const LARGHEZZA = 1255
  * Titolo a contorno con gli strati che salgono dietro, come nella bozza delle schermate.
  * In SVG: la sfumatura della palette colora solo i contorni e la scritta si adatta alla larghezza.
  */
+function IconaSede() {
+  return (
+    <svg className="brief-item__icona" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M24 44s14-12.2 14-22a14 14 0 0 0-28 0c0 9.8 14 22 14 22Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
+      <circle cx="24" cy="22" r="5.5" stroke="currentColor" strokeWidth="2.4" />
+    </svg>
+  )
+}
+
+function IconaCalendario() {
+  return (
+    <svg className="brief-item__icona" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <rect x="6" y="10" width="36" height="32" rx="4" stroke="currentColor" strokeWidth="2.4" />
+      <path d="M6 19h36M15 5v9M33 5v9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M15 27h4M23 27h4M31 27h4M15 34h4M23 34h4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconaBiglietto() {
+  return (
+    <svg className="brief-item__icona brief-item__icona--biglietto" viewBox="0 0 48 32" fill="none" aria-hidden="true">
+      <path
+        d="M4 10a3 3 0 0 0 0 6v6a2 2 0 0 0 2 2h36a2 2 0 0 0 2-2v-6a3 3 0 0 1 0-6V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6Z"
+        stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round"
+      />
+      <path d="M30 2v28" stroke="currentColor" strokeWidth="2.2" strokeDasharray="2.6 2.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function TitoloStrati({ testo }: { testo: string }) {
   const livelli = Array.from({ length: STRATI }, (_, i) => STRATI - i)
   return (
