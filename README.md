@@ -398,7 +398,7 @@ Servono le risposte prima di scrivere codice.
 <a id="roadmap"></a>
 ## Piano di consegna
 
-Dal kickoff del 16 ottobre alla presentazione finale del 17 dicembre 2026, in cinque fasi.
+Dal kickoff del 16 ottobre alla presentazione finale dell'11 dicembre 2026, in cinque fasi.
 
 ```mermaid
 gantt
@@ -437,18 +437,18 @@ gantt
     Tornelli e scanner in tempo reale     :d1, 2026-11-23, 2026-12-02
     Sicurezza RLS e dati dei minori       :d5, 2026-11-23, 2026-12-01
     Stima presenze dal peso simulata      :d9, 2026-11-25, 2026-12-02
-    App di scansione allo stand           :d2, 2026-11-30, 2026-12-09
-    Cruscotto staff                       :d3, 2026-12-01, 2026-12-10
-    Report direzione                      :d4, 2026-12-01, 2026-12-10
-    Portale espositori                    :d6, 2026-12-02, 2026-12-11
-    Rinnovo dal contratto precedente      :d7, 2026-12-07, 2026-12-11
-    Riconciliazione dei numeri            :crit, d8, 2026-12-09, 2026-12-14
+    App di scansione allo stand           :d2, 2026-11-30, 2026-12-05
+    Cruscotto staff                       :d3, 2026-12-01, 2026-12-06
+    Report direzione                      :d4, 2026-12-01, 2026-12-06
+    Portale espositori                    :d6, 2026-12-02, 2026-12-07
+    Rinnovo dal contratto precedente      :d7, 2026-12-05, 2026-12-07
+    Riconciliazione dei numeri            :crit, d8, 2026-12-07, 2026-12-08
 
     section Fase 4 · Chiusura e consegna
-    Test end-to-end delle tre fasi        :e1, 2026-12-11, 2026-12-15
-    README, API e repository              :e2, 2026-12-11, 2026-12-16
-    Prove della demo dal vivo             :e3, 2026-12-14, 2026-12-16
-    Presentazione finale e consegna       :milestone, m4, 2026-12-17, 0d
+    Test end-to-end delle tre fasi        :e1, 2026-12-09, 2026-12-10
+    README, API e repository              :e2, 2026-12-08, 2026-12-10
+    Prove della demo dal vivo             :e3, 2026-12-10, 2026-12-10
+    Presentazione finale e consegna       :milestone, m4, 2026-12-11, 0d
 ```
 
 Ogni attività ha una issue nel [GitHub Project](https://github.com/orgs/stand-up-arcade-milan/projects/1), con data di inizio e di fine, fase come milestone e filone (BID, BAD, Comune, Gestione). La vista Roadmap del Project è la versione operativa di questo grafico.
@@ -501,7 +501,7 @@ Il team è organizzato nelle aree BID e BAD, più alcune responsabilità trasver
 | --- | --- |
 | 6 novembre 2026 · SAL 1 | Requisiti e KPI approvati dal cliente |
 | 4 dicembre 2026 · SAL 2 | Edizioni 2024 e 2025 caricate, API base e un contratto 2026 dalla pratica alla firma |
-| 17 dicembre 2026 · Presentazione finale | Demo dal vivo delle tre fasi, repository unico e documentazione |
+| 11 dicembre 2026 · Presentazione finale | Demo dal vivo delle tre fasi, repository unico e documentazione |
 
 Il team manda al cliente un aggiornamento scritto il 20 e il 27 novembre e l'11 dicembre.
 

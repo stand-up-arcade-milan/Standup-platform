@@ -20,7 +20,7 @@ Criterio del cliente: il prodotto deve funzionare, essere implementato bene e il
 | --- | --- | --- |
 | 6/11/2026 | SAL 1 | Requisiti, schema dati, contratto API, mockup, KPI approvati |
 | 4/12/2026 | SAL 2 | Due edizioni nel database, API base, flusso commerciale, primo report |
-| 17/12/2026 | Presentazione finale | Le tre fasi della fiera dall'inizio alla fine, con i permessi per ruolo |
+| 11/12/2026 | Presentazione finale | Le tre fasi della fiera dall'inizio alla fine, con i permessi per ruolo |
 
 ## 3. Utenti e ruoli
 
