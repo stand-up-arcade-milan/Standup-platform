@@ -43,7 +43,7 @@ Padiglioni della fiera. Titolare: Organizzazione. Livello della tabella: INTERNO
 |---|---|---|---|
 | `codice` | `text` | Codice del padiglione | PUBBLICO |
 | `superficie_mq` | `numeric(9,2)` | Superficie utile del padiglione in metri quadri | INTERNO |
-| `capienza` | `integer` | Persone ammesse contemporaneamente nel padiglione | INTERNO |
+| `capienza` | `integer` | Persone ammesse contemporaneamente nel padiglione. Provvisoria: 6.000 stimata dal team sulla domanda 2026, da sostituire con la capienza autorizzata della sede | INTERNO |
 | `nome` | `text` | Nome leggibile del padiglione | PUBBLICO |
 
 ### varco
